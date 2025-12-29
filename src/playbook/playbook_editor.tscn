@@ -1,11 +1,15 @@
-[gd_scene load_steps=3 format=3 uid="uid://uby6wv405ia6"]
+[gd_scene load_steps=4 format=3 uid="uid://uby6wv405ia6"]
 
 [ext_resource type="Script" uid="uid://cgiy3uu4qb8w8" path="res://src/playbook/PlaybookEditor.gd" id="1_ybrfa"]
 [ext_resource type="Texture2D" uid="uid://dl8pi2jccrcsr" path="res://assets/sprites/tocho_tactics_background.png" id="2_4aaqw"]
+[ext_resource type="Script" uid="uid://v5bcnk3p7uvc" path="res://src/playbook/components/RouteManager.gd" id="3_sigk0"]
 
 [node name="PlaybookEditor" type="Node2D"]
 script = ExtResource("1_ybrfa")
-formation_bottom_margin = 0.092
+grid_margin_left = 0.412
+grid_margin_right = 0.411
+formation_margin_left = 0.445
+formation_margin_right = 0.445
 
 [node name="NodesContainer" type="Node2D" parent="."]
 
@@ -40,3 +44,8 @@ size_flags_vertical = 4
 texture = ExtResource("2_4aaqw")
 expand_mode = 1
 stretch_mode = 5
+
+[node name="RouteManager" type="Node2D" parent="." node_paths=PackedStringArray("route_line", "preview_line")]
+script = ExtResource("3_sigk0")
+route_line = NodePath("../RouteLine")
+preview_line = NodePath("../PreviewLine")
