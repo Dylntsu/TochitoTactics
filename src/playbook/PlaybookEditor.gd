@@ -7,6 +7,20 @@ extends Node2D
 @onready var nodes_container = $NodesContainer
 @onready var background = $CanvasLayer/Background 
 
+
+# ==============================================================================
+# VARIABLES PARA EL INSPECTOR
+# ==============================================================================
+
+@export_group("Posicionamiento de Jugadores")
+## Qué tan cerca del borde inferior aparecen los jugadores (multiplicador de spacing)
+@export_range(0.5, 4.0) var spawn_vertical_offset: float = 1.5
+## Qué tanto se adelanta el QB respecto a la línea (multiplicador de spacing)
+@export_range(0.0, 2.0) var qb_advance_offset: float = 0.5
+
+@export_group("Límites de Jugada")
+## Fila de la grilla donde empieza la zona de anotación/límite superior
+@export var offensive_limit_row_offset: int = 4
 # ==============================================================================
 # CONFIGURACIÓN
 # ==============================================================================
@@ -107,27 +121,42 @@ func render_formation():
 		limit_bottom_y - limit_top_y
 	)
 
-	var formation_y = (field_rect.position.y + field_rect.size.y) - (field_rect.size.y * formation_bottom_margin)
+	# 1. Definimos el centro horizontal y vertical de la "jaula" para seguridad
+	var cage_center_y = limit_rect.position.y + (limit_rect.size.y / 2.0)
+	
+	# 2. Ajustamos la formación para que use el limit_rect como referencia
+	# En lugar de usar el field_rect total, usamos el límite inferior de la jaula
+	var formation_y = limit_rect.end.y - (spacing * 1.5) 
 	
 	var player_step = 0
-	if player_count > 1: player_step = formation_width / (player_count - 1) # Usamos formation_width aquí también
+	if player_count > 1: 
+		player_step = formation_width / (player_count - 1)
+	
 	var qb_index = int(player_count / 2)
 	
 	for i in range(player_count):
 		var player = player_scene.instantiate()
 		player.player_id = i
-		player.name = "PlayerStart_" + str(i)
 		player.limit_rect = limit_rect 
 		
-		var pos_x = 0
-		if player_count > 1: pos_x = formation_start_x + (i * player_step)
-		else: pos_x = field_rect.position.x + field_rect.size.x / 2
+		# Cálculo de X 
+		var pos_x = formation_start_x + (i * player_step) if player_count > 1 else limit_rect.get_center().x
 		
-		var pos_y = formation_y
-		if i == qb_index: pos_y += spacing * 0.8
+		# Calculamos la posición Y y nos aseguramos de que esté dentro de la jaula
+		var final_y = formation_y
 		
-		player.position = Vector2(pos_x, pos_y)
+		# Si es el QB (el del centro), lo adelantamos un poco pero siempre dentro de la zona
+		if i == qb_index:
+			final_y -= spacing * 0.5 # Lo "subimos" un poco en la pantalla
+			
+		# Aplicamos un clamp final de seguridad para que el spawn sea garantizado
+		# Restamos un pequeño margen para que el cuerpo del jugador no toque el borde
+		var margin = spacing * 0.5
+		final_y = clamp(final_y, limit_rect.position.y + margin, limit_rect.end.y - margin)
 		
+		player.position = Vector2(pos_x, final_y)
+		
+		# --- CONEXIONES ---
 		player.start_route_requested.connect(_on_player_start_route_requested)
 		player.moved.connect(_on_player_moved)
 		
@@ -190,12 +219,9 @@ func _on_player_start_route_requested(player_node):
 	
 	# CASO A: El jugador YA TIENE una ruta
 	if route_manager.active_routes.has(pid):
-		# CAMBIO IMPORTANTE:
 		# En lugar de borrar y salir, le decimos al manager que REANUDE la edición.
 		route_manager.resume_editing_route(pid)
 		
-		# Si estábamos editando a OTRO jugador, el manager ya se encargó 
-		# de guardar/cancelar esa ruta dentro de resume_editing_route
 		return 
 
 	# CASO B: El jugador NO tiene ruta
