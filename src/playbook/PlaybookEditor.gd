@@ -54,7 +54,8 @@ func rebuild_editor():
 	render_grid_visuals()
 	render_formation() 
 	
-	route_manager.setup(grid_points, spacing)
+	# Usamos 'background.get_global_rect()' para los límites totales de la cancha
+	route_manager.setup(grid_points, spacing, background.get_global_rect())
 
 # ==============================================================================
 # RENDERIZADO (VISUALS)
@@ -87,24 +88,36 @@ func render_formation():
 			child.queue_free()
 
 	var field_rect = background.get_global_rect()
-	var limit_top_y = get_offensive_zone_limit_y()
-	var limit_bottom_y = field_rect.position.y + field_rect.size.y + (spacing * 2)
-	var limit_rect = Rect2(field_rect.position.x, limit_top_y, field_rect.size.x, limit_bottom_y - limit_top_y)
-
+	
+	# 1. Definimos el ANCHO correcto (restando márgenes laterales)
+	# Usamos las mismas variables que ya tenías para la formación
 	var formation_start_x = field_rect.position.x + (field_rect.size.x * formation_margin_left)
 	var formation_end_x = field_rect.position.x + field_rect.size.x * (1.0 - formation_margin_right)
-	var total_width = formation_end_x - formation_start_x
+	var formation_width = formation_end_x - formation_start_x
+	
+	# 2. Definimos el ALTO correcto
+	var limit_top_y = get_offensive_zone_limit_y()
+	var limit_bottom_y = field_rect.end.y - (spacing * 0.25)
+	
+	# 3. CREAMOS EL LÍMITE CORRECTO (Jaula ajustada)
+	var limit_rect = Rect2(
+		formation_start_x,      # Empezar donde empieza el margen izquierdo
+		limit_top_y, 
+		formation_width,        # Ancho restringido por los márgenes
+		limit_bottom_y - limit_top_y
+	)
+
 	var formation_y = (field_rect.position.y + field_rect.size.y) - (field_rect.size.y * formation_bottom_margin)
 	
 	var player_step = 0
-	if player_count > 1: player_step = total_width / (player_count - 1)
+	if player_count > 1: player_step = formation_width / (player_count - 1) # Usamos formation_width aquí también
 	var qb_index = int(player_count / 2)
 	
 	for i in range(player_count):
 		var player = player_scene.instantiate()
 		player.player_id = i
 		player.name = "PlayerStart_" + str(i)
-		player.limit_rect = limit_rect
+		player.limit_rect = limit_rect 
 		
 		var pos_x = 0
 		if player_count > 1: pos_x = formation_start_x + (i * player_step)
@@ -115,41 +128,83 @@ func render_formation():
 		
 		player.position = Vector2(pos_x, pos_y)
 		
-		# --- CONEXIONES ---
 		player.start_route_requested.connect(_on_player_start_route_requested)
-		player.moved.connect(_on_player_moved) # Conectamos la señal de movimiento
+		player.moved.connect(_on_player_moved)
 		
 		nodes_container.add_child(player)
 
 func get_offensive_zone_limit_y() -> float:
 	if grid_points.is_empty(): return 0.0
-	var limit_index = int(grid_size.y - 3) 
+	var limit_index = int(grid_size.y - 4) 
 	if limit_index < 0: limit_index = 0
 	return grid_points[limit_index].y
 
 # ==============================================================================
 # INPUT (Delegado al RouteManager)
 # ==============================================================================
+# En PlaybookEditor.gd
+
 func _input(event):
 	var mouse_pos = get_local_mouse_position()
 	
-	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
-		route_manager.handle_input(mouse_pos)
-	
-	elif event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_RIGHT and event.pressed:
-		route_manager.finish_route()
+	# 1. LOGICA DE DIBUJO STANDARD (Esto es lo que faltaba)
+	if event is InputEventMouseButton:
+		# Clic Izquierdo: Agregar nodo
+		if event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
+			if route_manager.is_editing:
+				route_manager.handle_input(mouse_pos)
+			else:
+				# Si NO estamos editando, intentamos agarrar una ruta existente
+				_try_click_existing_route_end(mouse_pos)
 		
+		# Clic Derecho: Terminar ruta
+		elif event.button_index == MOUSE_BUTTON_RIGHT and event.pressed:
+			route_manager.finish_route()
+			
 	elif event is InputEventMouseMotion:
+		# Movimiento: Actualizar preview
 		route_manager.update_preview(mouse_pos)
-		if Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT):
+		#dibujo sosteniendo
+		if Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT) and route_manager.is_editing:
 			route_manager.handle_input(mouse_pos)
+
+# Función auxiliar para detectar clics en las puntas de las rutas
+func _try_click_existing_route_end(mouse_pos: Vector2):
+	var snap_range = route_manager._snap_distance # Usamos la misma distancia de imán
+	
+	for pid in route_manager.active_routes:
+		var line = route_manager.active_routes[pid]
+		if line.get_point_count() > 0:
+			var end_point = line.points[line.get_point_count() - 1]
+			
+			# Si hicimos clic cerca del final de esta ruta
+			if mouse_pos.distance_to(end_point) < snap_range:
+				route_manager.resume_editing_route(pid)
+				return # Encontramos una, dejamos de buscar
 
 # --- CALLBACKS DE JUGADORES (CORREGIDOS) ---
 
 # 1. Cuando el jugador pide iniciar ruta:
 func _on_player_start_route_requested(player_node):
-	# Delegamos al manager. Le pasamos el ID y el CENTRO (anchor) del jugador.
-	route_manager.try_start_route(player_node.player_id, player_node.get_route_anchor())
+	var pid = player_node.player_id
+	
+	# CASO A: El jugador YA TIENE una ruta
+	if route_manager.active_routes.has(pid):
+		# CAMBIO IMPORTANTE:
+		# En lugar de borrar y salir, le decimos al manager que REANUDE la edición.
+		route_manager.resume_editing_route(pid)
+		
+		# Si estábamos editando a OTRO jugador, el manager ya se encargó 
+		# de guardar/cancelar esa ruta dentro de resume_editing_route
+		return 
+
+	# CASO B: El jugador NO tiene ruta
+	# Si estábamos dibujando a otro, guardamos esa primero
+	if route_manager.is_editing and route_manager.current_player_id != pid:
+		route_manager.finish_route()
+	
+	# Iniciamos nueva ruta desde cero
+	route_manager.try_start_route(pid, player_node.get_route_anchor())
 
 # 2. Cuando el jugador se mueve:
 func _on_player_moved(player_node):

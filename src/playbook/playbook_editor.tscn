@@ -6,24 +6,11 @@
 
 [node name="PlaybookEditor" type="Node2D"]
 script = ExtResource("1_ybrfa")
+grid_margin_bottom = 0.014
 grid_margin_left = 0.412
 grid_margin_right = 0.411
-formation_margin_left = 0.445
-formation_margin_right = 0.445
-
-[node name="NodesContainer" type="Node2D" parent="."]
-
-[node name="RouteLine" type="Line2D" parent="."]
-width = 4.0
-default_color = Color(0.274124, 0.8291763, 0, 1)
-joint_mode = 2
-begin_cap_mode = 2
-
-[node name="PreviewLine" type="Line2D" parent="."]
-width = 4.0
-default_color = Color(0.81747544, 1, 0.7742028, 0.5019608)
-joint_mode = 2
-begin_cap_mode = 2
+formation_margin_left = 0.389
+formation_margin_right = 0.402
 
 [node name="CanvasLayer" type="CanvasLayer" parent="."]
 layer = -1
@@ -32,10 +19,10 @@ layer = -1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = -366.0
-offset_top = -535.0
-offset_right = -366.0
-offset_bottom = -528.56
+offset_left = -396.99997
+offset_top = -518.0
+offset_right = -397.0
+offset_bottom = -518.0
 grow_horizontal = 2
 grow_vertical = 2
 scale = Vector2(1.5643929, 1.7869186)
@@ -44,6 +31,23 @@ size_flags_vertical = 4
 texture = ExtResource("2_4aaqw")
 expand_mode = 1
 stretch_mode = 5
+metadata/_edit_use_anchors_ = true
+
+[node name="NodesContainer" type="Node2D" parent="."]
+
+[node name="RouteLine" type="Line2D" parent="."]
+texture_repeat = 2
+width = 4.0
+default_color = Color(0.274124, 0.8291763, 0, 1)
+joint_mode = 2
+begin_cap_mode = 2
+
+[node name="PreviewLine" type="Line2D" parent="."]
+z_index = 100
+width = 4.0
+default_color = Color(0.81747544, 1, 0.7742028, 0.5019608)
+joint_mode = 2
+begin_cap_mode = 2
 
 [node name="RouteManager" type="Node2D" parent="." node_paths=PackedStringArray("route_line", "preview_line")]
 script = ExtResource("3_sigk0")
