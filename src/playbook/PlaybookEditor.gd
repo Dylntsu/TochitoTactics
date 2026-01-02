@@ -236,3 +236,39 @@ func _on_player_start_route_requested(player_node):
 func _on_player_moved(player_node):
 	# Avisamos al manager para que actualice el origen de la línea.
 	route_manager.update_route_origin(player_node.player_id, player_node.get_route_anchor())
+	
+
+## Interface pública para resetear el estado de la jugada actual.
+## Sigue el principio de Open/Closed: puede extenderse sin cambiar la llamada original.
+func reset_current_play() -> void:
+	_clear_routes()
+	_restore_initial_formation()
+
+func _clear_routes() -> void:
+	if route_manager:
+		route_manager.clear_all_routes()
+
+func _restore_initial_formation() -> void:
+	# Reusamos la lógica de reconstrucción existente
+	rebuild_editor()
+
+## Captura el estado actual de jugadores y rutas (Patrón Memento)
+func get_play_snapshot() -> Dictionary:
+	var snapshot = {
+		"name": "Nueva Jugada", # Podríamos pedir esto con un LineEdit después
+		"timestamp": Time.get_unix_time_from_system(),
+		"player_positions": {},
+		"routes": {}
+	}
+	
+	# Guardar posiciones de los jugadores
+	for player in nodes_container.get_children():
+		if "player_id" in player:
+			snapshot["player_positions"][player.player_id] = player.position
+	
+	# Guardar los puntos de las rutas
+	for pid in route_manager.active_routes:
+		var line = route_manager.active_routes[pid]
+		snapshot["routes"][pid] = line.points
+		
+	return snapshot

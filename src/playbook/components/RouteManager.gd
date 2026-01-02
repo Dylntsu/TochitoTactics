@@ -237,3 +237,27 @@ func _generate_dash_texture() -> GradientTexture2D:
 	tex.fill = GradientTexture2D.FILL_LINEAR
 	tex.width = 32; tex.height = 4
 	return tex
+
+## Limpia el estado de las rutas y remueve los nodos visuales de la escena.
+func clear_all_routes() -> void:
+	_abort_active_editing()
+	_destroy_visual_lines()
+	_clear_internal_data()
+
+func _abort_active_editing() -> void:
+	if is_editing:
+		cancel_editing()
+
+func _destroy_visual_lines() -> void:
+	for child in get_children():
+		# Verificación defensiva para no borrar las plantillas de configuración
+		if _is_removable_line(child):
+			child.queue_free()
+
+func _is_removable_line(node: Node) -> bool:
+	return node is Line2D and node != route_line and node != preview_line
+
+func _clear_internal_data() -> void:
+	active_routes.clear()
+	route_distances.clear()
+	
