@@ -261,3 +261,25 @@ func _clear_internal_data() -> void:
 	active_routes.clear()
 	route_distances.clear()
 	
+## Borra el estado actual para preparar la carga de una nueva jugada
+func clear_for_load() -> void:
+	clear_all_routes()
+
+## Reconstruye las rutas visuales basándose en el diccionario de datos
+func load_routes_from_data(routes_data: Dictionary) -> void:
+	for player_id in routes_data:
+		var points = routes_data[player_id]
+		if points.size() < 2: 
+			continue
+			
+		_reconstruct_saved_route(player_id, points)
+
+func _reconstruct_saved_route(id: int, points: Array) -> void:
+	# Preparamos el estado temporal para reusar finish_route()
+	current_player_id = id
+	current_route = []
+	current_route.append_array(points)
+	current_dist_accumulator = _calculate_path_distance(current_route)
+	
+	# Creamos la línea definitiva
+	finish_route()

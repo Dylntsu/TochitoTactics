@@ -127,3 +127,15 @@ text = "Reiniciar"
 [node name="BtnDelete" type="Button" parent="UI_Layer/MainLayout/HBoxContainer/RightPanel"]
 layout_mode = 2
 text = "Borrar"
+
+[node name="SavePlayGroup" type="ConfirmationDialog" parent="UI_Layer"]
+unique_name_in_owner = true
+size = Vector2i(295, 125)
+content_scale_size = Vector2i(75, 95)
+ok_button_text = "Guardar "
+cancel_button_text = "Cancelar"
+
+[node name="PlayNameInput" type="LineEdit" parent="UI_Layer/SavePlayGroup"]
+unique_name_in_owner = true
+offset_right = 68.5625
+offset_bottom = 31.0

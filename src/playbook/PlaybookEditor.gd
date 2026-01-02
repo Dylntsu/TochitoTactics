@@ -239,7 +239,7 @@ func _on_player_moved(player_node):
 	
 
 ## Interface pública para resetear el estado de la jugada actual.
-## Sigue el principio de Open/Closed: puede extenderse sin cambiar la llamada original.
+## puede extenderse sin cambiar la llamada original.
 func reset_current_play() -> void:
 	_clear_routes()
 	_restore_initial_formation()
@@ -252,23 +252,46 @@ func _restore_initial_formation() -> void:
 	# Reusamos la lógica de reconstrucción existente
 	rebuild_editor()
 
-## Captura el estado actual de jugadores y rutas (Patrón Memento)
+## Captura el estado actual de jugadores y rutas
 func get_play_snapshot() -> Dictionary:
 	var snapshot = {
-		"name": "Nueva Jugada", # Podríamos pedir esto con un LineEdit después
 		"timestamp": Time.get_unix_time_from_system(),
 		"player_positions": {},
 		"routes": {}
 	}
 	
-	# Guardar posiciones de los jugadores
 	for player in nodes_container.get_children():
 		if "player_id" in player:
 			snapshot["player_positions"][player.player_id] = player.position
 	
-	# Guardar los puntos de las rutas
 	for pid in route_manager.active_routes:
 		var line = route_manager.active_routes[pid]
-		snapshot["routes"][pid] = line.points
+		if is_instance_valid(line):
+			snapshot["routes"][pid] = line.points
 		
 	return snapshot
+
+## Función principal de carga llamada por la UI
+func load_play_data(play_snapshot: Dictionary) -> void:
+	# 1. Limpiar el campo antes de cargar
+	if route_manager:
+		route_manager.clear_for_load()
+	
+	# 2. Restaurar posiciones de jugadores
+	_restore_player_positions(play_snapshot.get("player_positions", {}))
+	
+	# 3. Restaurar rutas
+	_restore_routes(play_snapshot.get("routes", {}))
+
+func _restore_player_positions(positions: Dictionary) -> void:
+	for player in nodes_container.get_children():
+		if "player_id" in player:
+			var id = player.player_id
+			if positions.has(id):
+				player.position = positions[id]
+				# Emitimos la señal para que si hay una ruta iniciada, se mueva
+				player.moved.emit(player)
+
+func _restore_routes(routes: Dictionary) -> void:
+	if route_manager:
+		route_manager.load_routes_from_data(routes)
