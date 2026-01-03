@@ -15,6 +15,7 @@ const SAVE_DIR = "user://plays/"
 @onready var btn_save: Button = %BtnSave
 @onready var save_popup: AcceptDialog = %SavePlayPopup
 @onready var name_input: LineEdit = %PlayNameInput
+@onready var delete_confirm_popup: ConfirmationDialog = %DeleteConfirmPopup
 
 # memoria temporal para el proceso de guardado
 var _pending_play: Resource = null
@@ -48,6 +49,15 @@ func _setup_connections() -> void:
 	# conexion con el boton de borrado
 	if is_instance_valid(%BtnDelete):
 		%BtnDelete.pressed.connect(_on_delete_button_pressed)
+		
+	# el boton de la interfaz solo abre el popup
+	if is_instance_valid(%BtnDelete):
+		%BtnDelete.pressed.connect(_on_delete_button_pressed)
+		
+	#conectamos la confirmacion del popup al borrado real
+	if is_instance_valid(delete_confirm_popup):
+		delete_confirm_popup.confirmed.connect(_on_delete_confirmed)
+
 
 # ==============================================================================
 # MANEJO DE EVENTOS (HANDLERS)
@@ -71,13 +81,21 @@ func _on_load_play_requested(play_data: Resource) -> void:
 	_selected_play = play_data
 	if _is_editor_ready():
 		editor.load_play_data(play_data)
+	_update_selection_visuals() 
 
 ## logica para borrar la jugada seleccionada del disco y la lista 
 func _on_delete_button_pressed() -> void:
 	if _selected_play == null:
 		_log_error("selecciona una jugada de la lista antes de borrar.")
 		return
-		
+	
+	# simplemente mostramos el dialogo de confirmacion
+	delete_confirm_popup.popup_centered()
+
+## esta funcion solo se ejecuta si el usuario presiona "Borrar" en el popup
+func _on_delete_confirmed() -> void:
+	if _selected_play == null: return
+	
 	# 1. borrar el archivo fisico del disco
 	var safe_name = _selected_play.name.validate_filename()
 	var file_path = SAVE_DIR + safe_name + ".res"
@@ -85,19 +103,20 @@ func _on_delete_button_pressed() -> void:
 	if FileAccess.file_exists(file_path):
 		var error = DirAccess.remove_absolute(file_path)
 		if error == OK:
-			print("archivo eliminado exitosamente: ", file_path)
+			print("archivo eliminado: ", file_path)
 		else:
-			_log_error("no se pudo borrar el archivo fisico.")
+			_log_error("error al eliminar el archivo fisico.")
 	
-	# 2. quitar de la lista en memoria
+	# 2. limpiar datos en memoria y resetear editor
 	saved_plays.erase(_selected_play)
 	_selected_play = null
 	
-	# 3. resetear editor y refrescar interfaz
 	if _is_editor_ready():
 		editor.reset_current_play()
 	
+	# 3. refrescar la lista visualmente
 	_update_plays_list_ui()
+	print("jugada eliminada exitosamente")
 
 # ==============================================================================
 # LOGICA DE SISTEMA DE ARCHIVOS Y UI
@@ -151,6 +170,27 @@ func _finalize_save_process() -> void:
 func _update_plays_list_ui() -> void:
 	_clear_plays_grid()
 	_populate_plays_grid()
+	_update_selection_visuals()
+
+## indicador de jugada seleccionada
+func _update_selection_visuals() -> void:
+	# definimos el color de seleccion
+	var selected_color = Color(0.2, 0.8, 0.2)
+	
+	for btn in plays_grid.get_children():
+		if btn is Button:
+			if _selected_play != null and btn.text == _selected_play.name:
+				# forzamos el color en todos los estados para que no cambie al mover el mouse
+				btn.add_theme_color_override("font_color", selected_color)
+				btn.add_theme_color_override("font_hover_color", selected_color)
+				btn.add_theme_color_override("font_pressed_color", selected_color)
+				btn.add_theme_color_override("font_focus_color", selected_color)
+			else:
+				# limpiamos los overrides para volver al tema original
+				btn.remove_theme_color_override("font_color")
+				btn.remove_theme_color_override("font_hover_color")
+				btn.remove_theme_color_override("font_pressed_color")
+				btn.remove_theme_color_override("font_focus_color")
 
 func _clear_plays_grid() -> void:
 	for child in plays_grid.get_children():

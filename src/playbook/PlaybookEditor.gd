@@ -12,6 +12,11 @@ extends Node2D
 # ==============================================================================
 # VARIABLES PARA EL INSPECTOR
 # ==============================================================================
+@export_group("Ajuste Manual de Formacion")
+## que tan abajo aparece la linea de jugadores 
+@export_range(0.0, 3.0) var formation_y_offset: float = 0.8
+## cuanto se atrasa el qb respecto a los demas (yardas/spacing)
+@export_range(-2.0, 2.0) var qb_depth_offset: float = 0.7
 
 @export_group("Posicionamiento de Jugadores")
 ## que tan cerca del borde inferior aparecen los jugadores (multiplicador de spacing)
@@ -105,28 +110,18 @@ func render_formation():
 
 	var field_rect = background.get_global_rect()
 	
-	# usamos las mismas variables que ya tenias para la formacion
 	var formation_start_x = field_rect.position.x + (field_rect.size.x * formation_margin_left)
 	var formation_end_x = field_rect.position.x + field_rect.size.x * (1.0 - formation_margin_right)
 	var formation_width = formation_end_x - formation_start_x
 	
 	var limit_top_y = get_offensive_zone_limit_y()
-	var limit_bottom_y = field_rect.end.y - (spacing * 0.25)
+	# margen de seguridad para que no toquen el borde inferior del campo
+	var limit_bottom_y = field_rect.end.y - (spacing * 0.2)
 	
-	#creamos el limite correcto (jaula ajustada)
-	var limit_rect = Rect2(
-		formation_start_x,      # empezar donde empieza el margen izquierdo
-		limit_top_y, 
-		formation_width,        # ancho restringido por los margenes
-		limit_bottom_y - limit_top_y
-	)
+	var limit_rect = Rect2(formation_start_x, limit_top_y, formation_width, limit_bottom_y - limit_top_y)
 
-	# se define el centro horizontal y vertical de la "jaula" para seguridad
-	var cage_center_y = limit_rect.position.y + (limit_rect.size.y / 2.0)
-	
-	# se ajustam la formacion para que use el limit_rect como referencia
-	# en lugar de usar el field_rect total, usamos el limite inferior de la jaula
-	var formation_y = limit_rect.end.y - (spacing * 1.5) 
+	# calculamos la posicion y base usando el offset del inspector
+	var formation_y = limit_rect.end.y - (spacing * formation_y_offset) 
 	
 	var player_step = 0
 	if player_count > 1: 
@@ -137,38 +132,36 @@ func render_formation():
 	for i in range(player_count):
 		var player = player_scene.instantiate()
 		player.player_id = i
+		# asignamos el rectangulo antes de la posicion para que el setter interno valide
 		player.limit_rect = limit_rect 
 		
-		# calculo de x 
 		var pos_x = formation_start_x + (i * player_step) if player_count > 1 else limit_rect.get_center().x
-		
-		# calculamos la posicion y y nos aseguramos de que este dentro de la jaula
 		var final_y = formation_y
 		
-		# si es el qb (el del centro), lo adelantamos un poco pero siempre dentro de la zona
+		# posicionamos al qb atras
 		if i == qb_index:
-			final_y -= spacing * 0.5 # lo "subimos" un poco en la pantalla
+			final_y += spacing * qb_depth_offset 
 			
-		# aplicamos un clamp final de seguridad para que el spawn sea garantizado
-		# restamos un pequeño margen para que el cuerpo del jugador no toque el borde
-		var margin = spacing * 0.5
-		final_y = clamp(final_y, limit_rect.position.y + margin, limit_rect.end.y - margin)
+		# margen interno estricto para evitar que aparezcan tocando la linea
+		var safety_margin = spacing * 0.4
+		final_y = clamp(final_y, limit_rect.position.y + safety_margin, limit_rect.end.y - safety_margin)
+		pos_x = clamp(pos_x, limit_rect.position.x + safety_margin, limit_rect.end.x - safety_margin)
 		
 		player.position = Vector2(pos_x, final_y)
 		
-		# --- conexiones ---
+		# conexiones
 		player.start_route_requested.connect(_on_player_start_route_requested)
 		player.moved.connect(_on_player_moved)
 		
 		nodes_container.add_child(player)
 
 func get_offensive_zone_limit_y() -> float:
-	if grid_points.is_empty(): return 0.0
-	# correccion: usamos la variable exportada en lugar del valor hardcodeado '4'
-	var limit_index = int(grid_size.y - offensive_limit_row_offset) 
-	if limit_index < 0: limit_index = 0
+	if grid_points.is_empty(): 
+		return 0.0
+	var limit_index = int(grid_size.y - offensive_limit_row_offset)
+	if limit_index < 0: 
+		limit_index = 0
 	return grid_points[limit_index].y
-
 # ==============================================================================
 # INPUT (DELEGADO AL ROUTEMANAGER)
 # ==============================================================================
@@ -176,7 +169,7 @@ func get_offensive_zone_limit_y() -> float:
 func _input(event):
 	var mouse_pos = get_local_mouse_position()
 	
-	# 1. logica de dibujo standard (esto es lo que faltaba)
+	# 1. logica de dibujo standard
 	if event is InputEventMouseButton:
 		# clic izquierdo: agregar nodo
 		if event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
@@ -211,7 +204,7 @@ func _try_click_existing_route_end(mouse_pos: Vector2):
 				route_manager.resume_editing_route(pid)
 				return # encontramos una, dejamos de buscar
 
-# --- callbacks de jugadores (corregidos) ---
+# --- callbacks de jugadores ---
 
 # 1. cuando el jugador pide iniciar ruta:
 func _on_player_start_route_requested(player_node):
@@ -255,7 +248,7 @@ func _restore_initial_formation() -> void:
 # PERSISTENCIA Y MEMENTO (LOGICA PLAY DATA)
 # ==============================================================================
 
-## [cite_start]genera el recurso playdata con el estado actual y captura miniatura [cite: 1]
+## genera el recurso playdata con el estado actual y captura miniatura
 func get_play_resource() -> PlayData:
 	var new_play = PlayData.new()
 	new_play.timestamp = Time.get_unix_time_from_system()
