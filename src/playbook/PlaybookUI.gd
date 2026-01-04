@@ -37,26 +37,35 @@ func _ready() -> void:
 	_setup_connections()
 
 func _setup_connections() -> void:
+	# 1. Botón Nueva Jugada
 	if is_instance_valid(btn_new):
-		btn_new.pressed.connect(_on_new_play_requested)
+		if not btn_new.pressed.is_connected(_on_new_play_requested):
+			btn_new.pressed.connect(_on_new_play_requested)
 	
+	# 2. Botón Guardar
 	if is_instance_valid(btn_save):
-		btn_save.pressed.connect(_on_save_button_pressed)
+		if not btn_save.pressed.is_connected(_on_save_button_pressed):
+			btn_save.pressed.connect(_on_save_button_pressed)
 		
+	# 3. Popup de Guardado
 	if is_instance_valid(save_popup):
-		save_popup.confirmed.connect(_on_save_confirmed)
-		
-	# conexion con el boton de borrado
+		if not save_popup.confirmed.is_connected(_on_save_confirmed):
+			save_popup.confirmed.connect(_on_save_confirmed)
+			
+	# 4. Botón Borrar (Aquí estaba tu error duplicado)
 	if is_instance_valid(%BtnDelete):
-		%BtnDelete.pressed.connect(_on_delete_button_pressed)
-		
-	# el boton de la interfaz solo abre el popup
-	if is_instance_valid(%BtnDelete):
-		%BtnDelete.pressed.connect(_on_delete_button_pressed)
-		
-	#conectamos la confirmacion del popup al borrado real
+		if not %BtnDelete.pressed.is_connected(_on_delete_button_pressed):
+			%BtnDelete.pressed.connect(_on_delete_button_pressed)
+
+	# 5. Popup de Confirmación de Borrado
 	if is_instance_valid(delete_confirm_popup):
-		delete_confirm_popup.confirmed.connect(_on_delete_confirmed)
+		if not delete_confirm_popup.confirmed.is_connected(_on_delete_confirmed):
+			delete_confirm_popup.confirmed.connect(_on_delete_confirmed)
+
+	# 6. Botón Play / Preview
+	if is_instance_valid(%BtnPlay):
+		if not %BtnPlay.pressed.is_connected(_on_play_preview_pressed):
+			%BtnPlay.pressed.connect(_on_play_preview_pressed)
 
 
 # ==============================================================================
@@ -233,3 +242,14 @@ func _is_editor_ready() -> bool:
 
 func _log_error(message: String) -> void:
 	push_error("[PlaybookUI Error]: %s" % message)
+
+func _on_play_preview_pressed() -> void:
+	if _is_editor_ready():
+		# se reconstruye la formación para que todos salgan desde el origen
+		editor.rebuild_editor()
+		
+		# Esperamos un frame para que los nodos se posicionen correctamente
+		await get_tree().process_frame
+		
+		# ordenamos al editor que inicie la ejecución de rutas
+		editor.play_current_play()

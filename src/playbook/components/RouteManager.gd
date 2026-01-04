@@ -275,7 +275,7 @@ func load_routes_from_data(routes_data: Dictionary) -> void:
 		_reconstruct_saved_route(player_id, points)
 
 func _reconstruct_saved_route(id: int, points: Array) -> void:
-	# Preparamos el estado temporal para reusar finish_route()
+	# preparamos el estado temporal para reusar finish_route()
 	current_player_id = id
 	current_route = []
 	current_route.append_array(points)
@@ -283,3 +283,12 @@ func _reconstruct_saved_route(id: int, points: Array) -> void:
 	
 	# Creamos la línea definitiva
 	finish_route()
+
+## devuelve un diccionario 
+func get_all_routes() -> Dictionary:
+	#donde se guardan las lineas de los nodos
+	var routes_dict = {}
+	for p_id in active_routes.keys():
+		# se obtienen los puntos de la línea dibujada
+		routes_dict[p_id] = active_routes[p_id].get_points() 
+	return routes_dict

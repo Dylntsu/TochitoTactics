@@ -310,6 +310,15 @@ func load_play_data(play_data) -> void:
 	var positions = play_data.get("player_positions") if play_data is Dictionary else play_data.player_positions
 	var routes = play_data.get("routes") if play_data is Dictionary else play_data.routes
 	
+	for player in nodes_container.get_children():
+		if player is Area2D: # y player.has_method("execute_route")
+			# Buscamos la ruta guardada, si no existe devolvemos un array vacío
+			var saved_route = play_data.routes.get(player.player_id, PackedVector2Array())
+			
+			# Asignación segura
+			if "current_route" in player:
+				player.current_route = saved_route
+			
 	# restaurar posiciones de jugadores
 	_restore_player_positions(positions)
 	
@@ -328,3 +337,24 @@ func _restore_player_positions(positions: Dictionary) -> void:
 func _restore_routes(routes: Dictionary) -> void:
 	if route_manager:
 		route_manager.load_routes_from_data(routes)
+
+func play_current_play():
+	# Obtenemos todas las rutas dibujadas actualmente
+	# RouteManager tiene un método para devolver las rutas por ID
+	var all_routes = route_manager.get_all_routes() 
+	
+	for player in nodes_container.get_children():
+		if player is Area2D and player.has_method("play_route"):
+			# Asignamos la ruta correspondiente al jugador según su ID
+			# Si no tiene ruta dibujada, le pasamos un array vacío
+			player.current_route = all_routes.get(player.player_id, PackedVector2Array())
+			
+			player.play_route()
+
+## limpia y reinicia la formación antes de un nuevo preview
+func prepare_preview():
+	# Guardamos el estado actual para poder volver si fuera necesario
+	# Reconstruimos para asegurar que todos inicien en el origen
+	rebuild_editor()
+	await get_tree().process_frame
+	

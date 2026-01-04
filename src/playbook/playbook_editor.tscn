@@ -12,7 +12,7 @@ shadow_size = 10
 [node name="PlaybookEditor" type="Node2D"]
 script = ExtResource("1_ybrfa")
 formation_y_offset = 2.301
-qb_depth_offset = 0.9889999999999999
+qb_depth_offset = 0.989
 spawn_vertical_offset = 0.665
 grid_margin_bottom = 0.014
 grid_margin_left = 0.412
@@ -156,6 +156,12 @@ unique_name_in_owner = true
 custom_minimum_size = Vector2(120, 120)
 layout_mode = 2
 text = "Borrar"
+
+[node name="BtnPlay" type="Button" parent="UI_Layer/MainLayout/HBoxContainer/RightPanel"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(120, 120)
+layout_mode = 2
+text = "Probar Jugada"
 
 [node name="SavePlayPopup" type="ConfirmationDialog" parent="UI_Layer"]
 unique_name_in_owner = true
