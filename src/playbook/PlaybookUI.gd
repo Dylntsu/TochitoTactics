@@ -72,9 +72,40 @@ func _setup_connections() -> void:
 # MANEJO DE EVENTOS (HANDLERS)
 # ==============================================================================
 
+## Al presionar "+ Nueva"
 func _on_new_play_requested() -> void:
-	if _is_editor_ready():
-		editor.reset_current_play()
+	if not _is_editor_ready(): return
+	
+	# 1. Resetear el lienzo físico
+	editor.reset_current_play()
+	
+	# 2. Crear el recurso temporal (Placeholder)
+	var placeholder = PlayData.new()
+	placeholder.name = "Nueva Jugada..."
+	# Le asignamos una textura por defecto o vacía si tienes una
+	# placeholder.preview_texture = load("res://assets/ui/empty_slot.png") 
+	
+	# 3. Lo inyectamos al inicio de la lista de memoria (no al disco aún)
+	# Primero verificamos si ya existe un placeholder para no llenar la lista de basura
+	_remove_unused_placeholders()
+	saved_plays.insert(0, placeholder)
+	
+	# 4. Seleccionarlo automáticamente
+	_selected_play = placeholder
+	
+	# 5. Refrescar UI
+	_update_plays_list_ui()
+	_show_toast("Modo edición: Nueva Jugada", Color.CYAN)
+	
+## Limpia placeholders anteriores para que solo haya uno a la vez
+func _remove_unused_placeholders() -> void:
+	var to_remove = []
+	for play in saved_plays:
+		if play.name == "Nueva Jugada...":
+			to_remove.append(play)
+	for p in to_remove:
+		saved_plays.erase(p)
+		
 
 func _on_save_button_pressed() -> void:
 	if _is_editor_ready():
@@ -105,27 +136,23 @@ func _on_delete_button_pressed() -> void:
 func _on_delete_confirmed() -> void:
 	if _selected_play == null: return
 	
-	# 1. borrar el archivo fisico del disco
 	var safe_name = _selected_play.name.validate_filename()
 	var file_path = SAVE_DIR + safe_name + ".res"
 	
+	# Borrado físico
 	if FileAccess.file_exists(file_path):
-		var error = DirAccess.remove_absolute(file_path)
-		if error == OK:
-			print("archivo eliminado: ", file_path)
-		else:
-			_log_error("error al eliminar el archivo fisico.")
+		DirAccess.remove_absolute(file_path)
 	
-	# 2. limpiar datos en memoria y resetear editor
+	# Feedback y limpieza
+	var deleted_name = _selected_play.name
 	saved_plays.erase(_selected_play)
 	_selected_play = null
 	
 	if _is_editor_ready():
 		editor.reset_current_play()
 	
-	# 3. refrescar la lista visualmente
 	_update_plays_list_ui()
-	print("jugada eliminada exitosamente")
+	_show_toast("Eliminado: " + deleted_name, Color.ORANGE)
 
 # ==============================================================================
 # LOGICA DE SISTEMA DE ARCHIVOS Y UI
@@ -153,28 +180,31 @@ func _show_save_dialog() -> void:
 		save_popup.popup_centered()
 		name_input.grab_focus()
 
+## Modificamos el guardado para que reemplace el placeholder
 func _finalize_save_process() -> void:
-	if not _pending_play:
-		return
+	if not _pending_play: return
 
 	var play_name = name_input.text.strip_edges()
 	if play_name.is_empty():
 		play_name = "jugada_%d" % (saved_plays.size() + 1)
 	
 	_pending_play.name = play_name
-	
 	var safe_filename = play_name.validate_filename()
 	var save_path = SAVE_DIR + safe_filename + ".res"
 	
 	var error = ResourceSaver.save(_pending_play, save_path)
 	if error == OK:
-		print("guardado exitoso en: ", save_path)
+		# REEMPLAZO: Si la jugada actual era el placeholder, lo quitamos
+		_remove_unused_placeholders()
+		
+		# Añadimos la nueva jugada real
 		saved_plays.append(_pending_play)
+		_selected_play = _pending_play
+		
 		_update_plays_list_ui()
+		_show_toast("¡Guardado exitoso!", Color.GREEN)
 	else:
-		_log_error("error al guardar en disco: " + str(error))
-	
-	_pending_play = null
+		_show_toast("Error al guardar", Color.RED)
 
 func _update_plays_list_ui() -> void:
 	_clear_plays_grid()
@@ -253,3 +283,18 @@ func _on_play_preview_pressed() -> void:
 		
 		# ordenamos al editor que inicie la ejecución de rutas
 		editor.play_current_play()
+
+# playbookui.gd
+
+## Muestra un mensaje temporal en pantalla (Toast)
+func _show_toast(message: String, color: Color = Color.WHITE) -> void:
+	var label = %StatusLabel
+	if not label: return
+	
+	label.text = message
+	label.modulate = color
+	label.modulate.a = 1.0 # Opaco
+	
+	# Animación: aparece y se desvanece
+	var tween = create_tween()
+	tween.tween_property(label, "modulate:a", 0.0, 2.5).set_delay(1.0)

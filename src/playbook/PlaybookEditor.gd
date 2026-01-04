@@ -230,11 +230,17 @@ func _on_player_moved(player_node):
 	route_manager.update_route_origin(player_node.player_id, player_node.get_route_anchor())
 	
 
-## interface publica para resetear el estado de la jugada actual.
-## puede extenderse sin cambiar la llamada original.
-func reset_current_play() -> void:
-	_clear_routes()
-	_restore_initial_formation()
+## Detiene todas las animaciones de los jugadores en el lienzo
+func stop_all_animations():
+	for child in nodes_container.get_children():
+		if child is Area2D and child.has_method("stop_animation"):
+			child.stop_animation()
+
+## Actualizamos el reset para que sea más profundo
+func reset_current_play():
+	stop_all_animations() # Primero frenamos todo
+	route_manager.clear_all_routes() # Limpiamos líneas
+	rebuild_editor() # Reubicamos jugadores
 
 func _clear_routes() -> void:
 	if route_manager:
