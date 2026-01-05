@@ -29,12 +29,21 @@ var _selected_play: Resource = null
 # ==============================================================================
 
 func _ready() -> void:
-	# asegurar que existe la carpeta de guardado
+	#  Asegurar carpeta
 	if not DirAccess.dir_exists_absolute(SAVE_DIR):
 		DirAccess.make_dir_absolute(SAVE_DIR)
 		
-	_load_all_plays_from_disk()
+	# configurar botones y señales
 	_setup_connections()
+	
+		# ESPERA DE SEGURIDAD: 
+	# se espera un frame para que el PlaybookEditor termine su propio _ready
+	await get_tree().process_frame
+	
+	# escanear el disco para llenar el array 
+	_load_all_plays_from_disk()
+	# dibujar la lista y cargar la primera jugada automáticamente
+	_update_plays_list_ui()
 
 func _setup_connections() -> void:
 	# 1. Botón Nueva Jugada
@@ -66,7 +75,11 @@ func _setup_connections() -> void:
 	if is_instance_valid(%BtnPlay):
 		if not %BtnPlay.pressed.is_connected(_on_play_preview_pressed):
 			%BtnPlay.pressed.connect(_on_play_preview_pressed)
-
+			
+	# Conexión para el botón Reiniciar
+	if is_instance_valid(%BtnReset):
+		if not %BtnReset.pressed.is_connected(_on_reset_button_pressed):
+			%BtnReset.pressed.connect(_on_reset_button_pressed)
 
 # ==============================================================================
 # MANEJO DE EVENTOS (HANDLERS)
@@ -74,6 +87,8 @@ func _setup_connections() -> void:
 
 ## Al presionar "+ Nueva"
 func _on_new_play_requested() -> void:
+	# Al pedir nueva jugada o cargar otra, desbloqueamos clics
+	editor.unlock_all_players()
 	if not _is_editor_ready(): return
 	
 	# 1. Resetear el lienzo físico
@@ -118,10 +133,16 @@ func _on_save_confirmed() -> void:
 
 ## al presionar el boton lo marcamos como seleccionado
 func _on_load_play_requested(play_data: Resource) -> void:
+	if not _is_editor_ready(): return
+	
+	# Antes de cargar la nueva, obligamos al editor a detener cualquier proceso previo
+	editor.stop_all_animations()
+	
 	_selected_play = play_data
-	if _is_editor_ready():
-		editor.load_play_data(play_data)
-	_update_selection_visuals() 
+	editor.load_play_data(play_data)
+	_update_selection_visuals()
+	
+	_show_toast("Cargado: " + play_data.name, Color.AQUA)
 
 ## logica para borrar la jugada seleccionada del disco y la lista 
 func _on_delete_button_pressed() -> void:
@@ -209,7 +230,16 @@ func _finalize_save_process() -> void:
 func _update_plays_list_ui() -> void:
 	_clear_plays_grid()
 	_populate_plays_grid()
-	_update_selection_visuals()
+	
+	# selección automática al inicio
+	if _selected_play == null and not saved_plays.is_empty():
+		# obtenemos la primera jugada de la lista cargada
+		var first_play = saved_plays[0]
+		# forzamos la carga de esta jugada en el editor
+		_on_load_play_requested(first_play)
+	else:
+		# Si no hay jugadas o ya hay una seleccionada, solo refrescamos lo visual
+		_update_selection_visuals()
 
 ## indicador de jugada seleccionada
 func _update_selection_visuals() -> void:
@@ -274,17 +304,15 @@ func _log_error(message: String) -> void:
 	push_error("[PlaybookUI Error]: %s" % message)
 
 func _on_play_preview_pressed() -> void:
-	if _is_editor_ready():
-		# se reconstruye la formación para que todos salgan desde el origen
-		editor.rebuild_editor()
-		
-		# Esperamos un frame para que los nodos se posicionen correctamente
-		await get_tree().process_frame
-		
-		# ordenamos al editor que inicie la ejecución de rutas
-		editor.play_current_play()
-
-# playbookui.gd
+	if not _is_editor_ready(): return
+	
+	# Mandamos a todos al inicio antes de correr
+	for player in editor.nodes_container.get_children():
+		if player.has_method("reset_to_start"):
+			player.reset_to_start()
+	
+	await get_tree().process_frame
+	editor.play_current_play()
 
 ## Muestra un mensaje temporal en pantalla (Toast)
 func _show_toast(message: String, color: Color = Color.WHITE) -> void:
@@ -298,3 +326,9 @@ func _show_toast(message: String, color: Color = Color.WHITE) -> void:
 	# Animación: aparece y se desvanece
 	var tween = create_tween()
 	tween.tween_property(label, "modulate:a", 0.0, 2.5).set_delay(1.0)
+
+## Manejador del botón Reiniciar
+func _on_reset_button_pressed() -> void:
+	if _is_editor_ready():
+		editor.reset_formation_state()
+		_show_toast("Posiciones restablecidas", Color.LIGHT_BLUE)

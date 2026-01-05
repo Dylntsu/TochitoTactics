@@ -148,7 +148,7 @@ func render_formation():
 		pos_x = clamp(pos_x, limit_rect.position.x + safety_margin, limit_rect.end.x - safety_margin)
 		
 		player.position = Vector2(pos_x, final_y)
-		
+		player.save_starting_position() 
 		# conexiones
 		player.start_route_requested.connect(_on_player_start_route_requested)
 		player.moved.connect(_on_player_moved)
@@ -327,7 +327,6 @@ func load_play_data(play_data) -> void:
 			
 	# restaurar posiciones de jugadores
 	_restore_player_positions(positions)
-	
 	# restaurar rutas
 	_restore_routes(routes)
 
@@ -364,3 +363,21 @@ func prepare_preview():
 	rebuild_editor()
 	await get_tree().process_frame
 	
+## Desbloquea a todos los jugadores para que vuelvan a ser editables
+func unlock_all_players():
+	for child in nodes_container.get_children():
+		if child is Area2D:
+			child.input_pickable = true
+			if child.has_method("stop_animation"):
+				child.stop_animation()
+
+## Restablece todo el lienzo al estado inicial de formación
+func reset_formation_state():
+	# resetear cada jugador
+	for child in nodes_container.get_children():
+		if child is Area2D and child.has_method("reset_to_start"):
+			child.reset_to_start()
+			
+	# forzar actualización del RouteManager para que las líneas se redibujen desde el inicio
+	if route_manager.has_method("update_all_lines"):
+		route_manager.update_all_lines()

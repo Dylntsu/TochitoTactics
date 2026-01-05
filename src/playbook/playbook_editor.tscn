@@ -135,7 +135,7 @@ mouse_filter = 2
 unique_name_in_owner = true
 custom_minimum_size = Vector2(120, 120)
 layout_mode = 2
-text = "+ Nueva"
+text = "+ Nueva Jugada"
 
 [node name="VSeparator" type="VSeparator" parent="UI_Layer/MainLayout/HBoxContainer/RightPanel"]
 layout_mode = 2
@@ -144,18 +144,20 @@ layout_mode = 2
 unique_name_in_owner = true
 custom_minimum_size = Vector2(120, 120)
 layout_mode = 2
-text = "Guardar/Editar"
+text = "Guardar Jugada"
 
 [node name="BtnReset" type="Button" parent="UI_Layer/MainLayout/HBoxContainer/RightPanel"]
+unique_name_in_owner = true
 custom_minimum_size = Vector2(120, 120)
 layout_mode = 2
-text = "Reiniciar"
+text = "Restablecer Posiciones
+"
 
 [node name="BtnDelete" type="Button" parent="UI_Layer/MainLayout/HBoxContainer/RightPanel"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(120, 120)
 layout_mode = 2
-text = "Borrar"
+text = "Borrar Jugada"
 
 [node name="BtnPlay" type="Button" parent="UI_Layer/MainLayout/HBoxContainer/RightPanel"]
 unique_name_in_owner = true
@@ -186,16 +188,14 @@ cancel_button_text = "Cancelar"
 
 [node name="StatusLabel" type="Label" parent="UI_Layer"]
 unique_name_in_owner = true
-anchors_preset = 7
+anchors_preset = 5
 anchor_left = 0.5
-anchor_top = 1.0
 anchor_right = 0.5
-anchor_bottom = 1.0
-offset_left = -20.0
-offset_top = -23.0
-offset_right = 20.0
+offset_left = -6.4000244
+offset_top = 21.64
+offset_right = 33.599976
+offset_bottom = 44.64002
 grow_horizontal = 2
-grow_vertical = 0
 size_flags_horizontal = 4
 
 [node name="CaptureFrame" type="ReferenceRect" parent="."]

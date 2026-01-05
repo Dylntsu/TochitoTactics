@@ -13,6 +13,7 @@ signal moved(player_node)
 
 # Variable para guardar la ruta que se cargó desde el archivo
 var current_route: PackedVector2Array = []
+var starting_position: Vector2 # Para memorizar el origen
 
 # Variables de estado para el arrastre manual
 var is_dragging: bool = false
@@ -79,6 +80,7 @@ func play_route():
 	if is_dragging:
 		stop_dragging()
 		
+	input_pickable = false # Bloquea clics mientras corre
 	is_playing = true
 	_active_tween = create_tween()
 	
@@ -131,3 +133,15 @@ func stop_dragging():
 	modulate.a = 1.0
 	scale = Vector2(1.0, 1.0)
 	z_index = 20
+
+## Guarda la posición actual como el punto de inicio oficial
+func save_starting_position():
+	starting_position = position
+
+## Regresa al jugador a su origen y permite volver a moverlo
+func reset_to_start():
+	stop_animation() # Detiene cualquier tween activo
+	position = starting_position # Vuelve al inicio de la formación
+	input_pickable = true # Permite clics de nuevo
+	is_playing = false
+	modulate.a = 1.0 # Restaura opacidad por si acaso
