@@ -198,6 +198,11 @@ offset_bottom = 44.64002
 grow_horizontal = 2
 size_flags_horizontal = 4
 
+[node name="AutosaveTimer" type="Timer" parent="UI_Layer"]
+unique_name_in_owner = true
+wait_time = 0.8
+one_shot = true
+
 [node name="CaptureFrame" type="ReferenceRect" parent="."]
 offset_left = 415.99997
 offset_top = 54.000008

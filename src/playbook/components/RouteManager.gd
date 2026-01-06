@@ -8,7 +8,8 @@ class_name RouteManager
 @export var preview_line: Line2D
 @export var max_points: int = 6
 @export var bridge_limit_multiplier: float = 3.0
-@export var max_total_distance_pixels: float = 800.0 
+@export var max_total_distance_pixels: float = 800.0
+signal route_modified
 
 const PLAYER_COLORS = [
 	Color("#2980b9"), Color("#c0392b"), Color("#f39c12"), Color("#8e44ad"), Color("#16a085")
@@ -180,7 +181,8 @@ func finish_route():
 		add_child(new_line) 
 		active_routes[current_player_id] = new_line
 		route_distances[current_player_id] = current_dist_accumulator
-	
+		
+	route_modified.emit()
 	cancel_editing()
 
 func cancel_editing():

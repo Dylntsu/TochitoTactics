@@ -5,6 +5,7 @@ extends Area2D
 # ==============================================================================
 signal start_route_requested(player_node)
 signal moved(player_node)
+signal interaction_ended 
 
 # ==============================================================================
 # PROPIEDADES EXPORTADAS Y VARIABLES
@@ -139,8 +140,11 @@ func stop_dragging():
 	modulate.a = 1.0
 	scale = Vector2(1.0, 1.0)
 	z_index = 20
-	# se guarda su nueva "posición inicial" para los futuros resets
-	save_starting_position()
+	
+	save_starting_position() 
+	
+	# avisamos que terminamos de interactuar
+	interaction_ended.emit()
 
 ## Guarda la posición actual como el punto de inicio oficial
 func save_starting_position():

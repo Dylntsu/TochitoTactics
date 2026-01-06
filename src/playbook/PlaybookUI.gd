@@ -16,6 +16,7 @@ const SAVE_DIR = "user://plays/"
 @onready var save_popup: AcceptDialog = %SavePlayPopup
 @onready var name_input: LineEdit = %PlayNameInput
 @onready var delete_confirm_popup: ConfirmationDialog = %DeleteConfirmPopup
+@onready var autosave_timer = $AutosaveTimer
 
 # memoria temporal para el proceso de guardado
 var _pending_play: Resource = null
@@ -33,16 +34,27 @@ func _ready() -> void:
 	if not DirAccess.dir_exists_absolute(SAVE_DIR):
 		DirAccess.make_dir_absolute(SAVE_DIR)
 		
-	# configurar botones y señales
+	# Configurar botones y señales UI
 	_setup_connections()
 	
-		# ESPERA DE SEGURIDAD: 
-	# se espera un frame para que el PlaybookEditor termine su propio _ready
+	# Configurar Timer de Autoguardado
+	if autosave_timer:
+		if not autosave_timer.timeout.is_connected(_on_autosave_timer_timeout):
+			autosave_timer.timeout.connect(_on_autosave_timer_timeout)
+
+	# Esperamos un frame para que el PlaybookEditor termine su propio _ready
 	await get_tree().process_frame
 	
-	# escanear el disco para llenar el array 
+	# Conexión vital para el Autoguardado (Editor -> UI)
+	if is_instance_valid(editor):
+		if editor.has_signal("content_changed"):
+			if not editor.content_changed.is_connected(_on_editor_content_changed):
+				editor.content_changed.connect(_on_editor_content_changed)
+	
+	# Escanear el disco para llenar el array 
 	_load_all_plays_from_disk()
-	# dibujar la lista y cargar la primera jugada automáticamente
+	
+	# Dibujar la lista y cargar la primera jugada automáticamente
 	_update_plays_list_ui()
 
 func _setup_connections() -> void:
@@ -61,7 +73,7 @@ func _setup_connections() -> void:
 		if not save_popup.confirmed.is_connected(_on_save_confirmed):
 			save_popup.confirmed.connect(_on_save_confirmed)
 			
-	# 4. Botón Borrar (Aquí estaba tu error duplicado)
+	# 4. Botón Borrar
 	if is_instance_valid(%BtnDelete):
 		if not %BtnDelete.pressed.is_connected(_on_delete_button_pressed):
 			%BtnDelete.pressed.connect(_on_delete_button_pressed)
@@ -76,7 +88,7 @@ func _setup_connections() -> void:
 		if not %BtnPlay.pressed.is_connected(_on_play_preview_pressed):
 			%BtnPlay.pressed.connect(_on_play_preview_pressed)
 			
-	# Conexión para el botón Reiniciar
+	# 7. Botón Reiniciar
 	if is_instance_valid(%BtnReset):
 		if not %BtnReset.pressed.is_connected(_on_reset_button_pressed):
 			%BtnReset.pressed.connect(_on_reset_button_pressed)
@@ -87,21 +99,19 @@ func _setup_connections() -> void:
 
 ## Al presionar "+ Nueva"
 func _on_new_play_requested() -> void:
-	# Al pedir nueva jugada o cargar otra, desbloqueamos clics
-	editor.unlock_all_players()
 	if not _is_editor_ready(): return
+
+	# Al pedir nueva jugada, desbloqueamos clics
+	editor.unlock_all_players()
 	
 	# 1. Resetear el lienzo físico
 	editor.reset_current_play()
 	
-	# 2. Crear el recurso temporal (Placeholder)
+	# 2. Crear el recurso temporal 
 	var placeholder = PlayData.new()
 	placeholder.name = "Nueva Jugada..."
-	# Le asignamos una textura por defecto o vacía si tienes una
-	# placeholder.preview_texture = load("res://assets/ui/empty_slot.png") 
 	
-	# 3. Lo inyectamos al inicio de la lista de memoria (no al disco aún)
-	# Primero verificamos si ya existe un placeholder para no llenar la lista de basura
+	# 3. Limpiar placeholders viejos e insertar el nuevo
 	_remove_unused_placeholders()
 	saved_plays.insert(0, placeholder)
 	
@@ -120,7 +130,6 @@ func _remove_unused_placeholders() -> void:
 			to_remove.append(play)
 	for p in to_remove:
 		saved_plays.erase(p)
-		
 
 func _on_save_button_pressed() -> void:
 	if _is_editor_ready():
@@ -131,29 +140,33 @@ func _on_save_button_pressed() -> void:
 func _on_save_confirmed() -> void:
 	_finalize_save_process()
 
-## al presionar el boton lo marcamos como seleccionado
+## Al presionar el boton de una jugada en la lista
 func _on_load_play_requested(play_data: Resource) -> void:
 	if not _is_editor_ready(): return
 	
-	# Antes de cargar la nueva, obligamos al editor a detener cualquier proceso previo
+	# 1. Guardado Implícito: Guardamos la anterior antes de cambiar
+	_perform_silent_save()
+	
+	# 2. Detener animaciones previas
 	editor.stop_all_animations()
 	
+	# 3. Cargar la nueva
 	_selected_play = play_data
 	editor.load_play_data(play_data)
 	_update_selection_visuals()
 	
 	_show_toast("Cargado: " + play_data.name, Color.AQUA)
 
-## logica para borrar la jugada seleccionada del disco y la lista 
+## Logica para borrar la jugada seleccionada del disco y la lista 
 func _on_delete_button_pressed() -> void:
 	if _selected_play == null:
-		_log_error("selecciona una jugada de la lista antes de borrar.")
+		_show_toast("Selecciona una jugada primero", Color.RED)
 		return
 	
-	# simplemente mostramos el dialogo de confirmacion
+	# Mostramos el dialogo de confirmacion
 	delete_confirm_popup.popup_centered()
 
-## esta funcion solo se ejecuta si el usuario presiona "Borrar" en el popup
+## Esta funcion solo se ejecuta si el usuario presiona "Borrar" en el popup
 func _on_delete_confirmed() -> void:
 	if _selected_play == null: return
 	
@@ -215,7 +228,7 @@ func _finalize_save_process() -> void:
 	
 	var error = ResourceSaver.save(_pending_play, save_path)
 	if error == OK:
-		# REEMPLAZO: Si la jugada actual era el placeholder, lo quitamos
+		# si la jugada actual era el placeholder, lo quitamos
 		_remove_unused_placeholders()
 		
 		# Añadimos la nueva jugada real
@@ -231,31 +244,28 @@ func _update_plays_list_ui() -> void:
 	_clear_plays_grid()
 	_populate_plays_grid()
 	
-	# selección automática al inicio
+	# Selección automática al inicio
 	if _selected_play == null and not saved_plays.is_empty():
-		# obtenemos la primera jugada de la lista cargada
 		var first_play = saved_plays[0]
-		# forzamos la carga de esta jugada en el editor
-		_on_load_play_requested(first_play)
+		# Forzamos la carga pero sin autoguardar la previa 
+		_selected_play = first_play
+		editor.load_play_data(first_play)
+		_update_selection_visuals()
 	else:
-		# Si no hay jugadas o ya hay una seleccionada, solo refrescamos lo visual
 		_update_selection_visuals()
 
-## indicador de jugada seleccionada
+## Indicador de jugada seleccionada
 func _update_selection_visuals() -> void:
-	# definimos el color de seleccion
 	var selected_color = Color(0.2, 0.8, 0.2)
 	
 	for btn in plays_grid.get_children():
 		if btn is Button:
 			if _selected_play != null and btn.text == _selected_play.name:
-				# forzamos el color en todos los estados para que no cambie al mover el mouse
 				btn.add_theme_color_override("font_color", selected_color)
 				btn.add_theme_color_override("font_hover_color", selected_color)
 				btn.add_theme_color_override("font_pressed_color", selected_color)
 				btn.add_theme_color_override("font_focus_color", selected_color)
 			else:
-				# limpiamos los overrides para volver al tema original
 				btn.remove_theme_color_override("font_color")
 				btn.remove_theme_color_override("font_hover_color")
 				btn.remove_theme_color_override("font_pressed_color")
@@ -287,6 +297,11 @@ func _create_play_button(data: Resource) -> Button:
 	btn.clip_text = true
 	btn.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	
+	# ESTILO ESPECIAL PARA PLACEHOLDER
+	if data.name == "Nueva Jugada...":
+		btn.modulate = Color(1, 1, 1, 0.6) # Semitransparente
+		btn.text = "[ " + data.name + " ]"
+	
 	btn.pressed.connect(_on_load_play_requested.bind(data))
 	return btn
 
@@ -306,7 +321,10 @@ func _log_error(message: String) -> void:
 func _on_play_preview_pressed() -> void:
 	if not _is_editor_ready(): return
 	
-	editor.lock_editor_for_play()# bloqueo
+	# Guardar antes de ejecutar para no perder cambios recientes
+	_perform_silent_save()
+	
+	editor.lock_editor_for_play()
 	# Mandamos a todos al inicio antes de correr
 	for player in editor.nodes_container.get_children():
 		if player.has_method("reset_to_start"):
@@ -315,10 +333,16 @@ func _on_play_preview_pressed() -> void:
 	await get_tree().process_frame
 	editor.play_current_play()
 
-## Muestra un mensaje temporal en pantalla (Toast)
+## Muestra un mensaje temporal en pantalla 
 func _show_toast(message: String, color: Color = Color.WHITE) -> void:
 	var label = %StatusLabel
 	if not label: return
+	
+	# usamos has_meta para evitar errores
+	if label.has_meta("tween"):
+		var existing_tween = label.get_meta("tween")
+		if existing_tween and existing_tween.is_valid():
+			existing_tween.kill()
 	
 	label.text = message
 	label.modulate = color
@@ -327,10 +351,55 @@ func _show_toast(message: String, color: Color = Color.WHITE) -> void:
 	# Animación: aparece y se desvanece
 	var tween = create_tween()
 	tween.tween_property(label, "modulate:a", 0.0, 2.5).set_delay(1.0)
+	
+	# Guardamos la referencia para poder cancelarla si llega otro mensaje
+	label.set_meta("tween", tween)
 
 ## Manejador del botón Reiniciar
 func _on_reset_button_pressed() -> void:
 	if _is_editor_ready():
 		editor.reset_formation_state()
-		editor.unlock_editor_for_editing() #desbloqeo
+		# Forzamos desbloqueo explícito
+		editor.unlock_editor_for_editing()
 		_show_toast("Posiciones restablecidas", Color.LIGHT_BLUE)
+
+# ==============================================================================
+# SISTEMA DE AUTOGUARDADO (DEBOUNCE)
+# ==============================================================================
+
+## 1. Se llama cada vez que mueves algo (Vía Señal). Reinicia el contador.
+func _on_editor_content_changed() -> void:
+	# Solo autoguardamos si es una jugada real y existente
+	if _selected_play and _selected_play.name != "Nueva Jugada...":
+		_show_toast("...", Color.LIGHT_GRAY) # Feedback visual sutil
+		autosave_timer.start() # Reinicia la cuenta regresiva
+
+##  Se llama cuando el Timer llega a 0 
+func _on_autosave_timer_timeout() -> void:
+	_perform_silent_save()
+
+## La función que guarda sin abrir popups
+func _perform_silent_save() -> void:
+	if _selected_play == null: return
+	if not _is_editor_ready(): return
+	
+	# Obtenemos datos frescos del editor
+	var fresh_data = editor.get_current_state_as_data()
+	
+	# Actualizamos el recurso en memoria
+	_selected_play.formations = fresh_data.formations
+	_selected_play.routes = fresh_data.routes
+	
+	# Si es el placeholder no guardamos en disco para no crear archivos basura
+	if _selected_play.name == "Nueva Jugada...":
+		return
+
+	# Guardamos en disco
+	var safe_name = _selected_play.name.validate_filename()
+	var save_path = SAVE_DIR + safe_name + ".res"
+	
+	var error = ResourceSaver.save(_selected_play, save_path)
+	if error == OK:
+		_show_toast("Guardado", Color(0, 1, 0, 0.7)) # Verde transparente
+	else:
+		_show_toast("Error guardando", Color.RED)

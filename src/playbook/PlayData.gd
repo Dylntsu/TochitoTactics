@@ -1,9 +1,17 @@
-# PlayData.gd
 extends Resource
 class_name PlayData
 
-@export var name: String = ""
-@export var timestamp: float = 0.0
-@export var player_positions: Dictionary = {}
+# Nombre de la jugada
+@export var name: String = "Nueva Jugada"
+
+# Imagen previa
+@export var preview_texture: Texture2D
+
+# Posiciones de los jugadores 
+@export var formations: Dictionary = {} 
+
+# Rutas dibujadas
 @export var routes: Dictionary = {}
-@export var preview_texture: Texture2D = null
+
+# Fecha y hora de creación/modificación
+@export var timestamp: float = 0.0

@@ -8,24 +8,20 @@ extends Node2D
 @onready var background = $CanvasLayer/Background 
 @onready var capture_frame = $CaptureFrame
 
+signal content_changed # señal para avisar a la UI
 
 # ==============================================================================
 # VARIABLES PARA EL INSPECTOR
 # ==============================================================================
 @export_group("Ajuste Manual de Formacion")
-## que tan abajo aparece la linea de jugadores 
 @export_range(0.0, 3.0) var formation_y_offset: float = 0.8
-## cuanto se atrasa el qb respecto a los demas (yardas/spacing)
 @export_range(-2.0, 2.0) var qb_depth_offset: float = 0.7
 
 @export_group("Posicionamiento de Jugadores")
-## que tan cerca del borde inferior aparecen los jugadores (multiplicador de spacing)
 @export_range(0.5, 4.0) var spawn_vertical_offset: float = 1.5
-## que tanto se adelanta el qb respecto a la linea (multiplicador de spacing)
 @export_range(0.0, 2.0) var qb_advance_offset: float = 0.5
 
 @export_group("Limites de Jugada")
-## fila de la grilla donde empieza la zona de anotacion/limite superior
 @export var offensive_limit_row_offset: int = 4
 
 # ==============================================================================
@@ -50,9 +46,13 @@ extends Node2D
 @export_range(0.0, 0.5) var formation_bottom_margin: float = 0.099
 @export var player_count: int = 5 
 
-# estado local (solo visuales estaticos)
+# ESTADO LOCAL
 var grid_points: Array[Vector2] = []
 var spacing: int = 0
+
+# --- Memoria Caché para posiciones ---
+#  evita que los jugadores se reseteen al redimensionar la ventana
+var _active_play_positions: Dictionary = {}
 
 # ==============================================================================
 # CICLO DE VIDA
@@ -61,6 +61,8 @@ func _ready():
 	get_viewport().size_changed.connect(_on_viewport_resized)
 	await get_tree().process_frame
 	rebuild_editor()
+	if route_manager:
+		route_manager.route_modified.connect(_on_child_action_finished)
 
 func _on_viewport_resized():
 	rebuild_editor()
@@ -115,12 +117,10 @@ func render_formation():
 	var formation_width = formation_end_x - formation_start_x
 	
 	var limit_top_y = get_offensive_zone_limit_y()
-	# margen de seguridad para que no toquen el borde inferior del campo
 	var limit_bottom_y = field_rect.end.y - (spacing * 0.2)
 	
 	var limit_rect = Rect2(formation_start_x, limit_top_y, formation_width, limit_bottom_y - limit_top_y)
 
-	# calculamos la posicion y base usando el offset del inspector
 	var formation_y = limit_rect.end.y - (spacing * formation_y_offset) 
 	
 	var player_step = 0
@@ -132,26 +132,34 @@ func render_formation():
 	for i in range(player_count):
 		var player = player_scene.instantiate()
 		player.player_id = i
-		# asignamos el rectangulo antes de la posicion para que el setter interno valide
-		player.limit_rect = limit_rect 
 		
+		# se calcula la posición por defecto 
 		var pos_x = formation_start_x + (i * player_step) if player_count > 1 else limit_rect.get_center().x
 		var final_y = formation_y
 		
-		# posicionamos al qb atras
 		if i == qb_index:
 			final_y += spacing * qb_depth_offset 
 			
-		# margen interno estricto para evitar que aparezcan tocando la linea
 		var safety_margin = spacing * 0.4
 		final_y = clamp(final_y, limit_rect.position.y + safety_margin, limit_rect.end.y - safety_margin)
 		pos_x = clamp(pos_x, limit_rect.position.x + safety_margin, limit_rect.end.x - safety_margin)
 		
-		player.position = Vector2(pos_x, final_y)
+		if _active_play_positions.has(i):
+			# Si ya existe en memoria (por carga o movimiento), usamos esa posición
+			player.position = _active_play_positions[i]
+		else:
+			# Si es nueva, usamos el cálculo matemático
+			player.position = Vector2(pos_x, final_y)
+		
+		player.limit_rect = limit_rect 
 		player.save_starting_position() 
-		# conexiones
+		
+		# Conexiones
 		player.start_route_requested.connect(_on_player_start_route_requested)
 		player.moved.connect(_on_player_moved)
+		
+		if not player.interaction_ended.is_connected(_on_child_action_finished):
+			player.interaction_ended.connect(_on_child_action_finished)
 		
 		nodes_container.add_child(player)
 
@@ -162,134 +170,109 @@ func get_offensive_zone_limit_y() -> float:
 	if limit_index < 0: 
 		limit_index = 0
 	return grid_points[limit_index].y
+
 # ==============================================================================
-# INPUT (DELEGADO AL ROUTEMANAGER)
+# INPUT
 # ==============================================================================
 
 func _input(event):
 	var mouse_pos = get_local_mouse_position()
 	
-	# 1. logica de dibujo standard
 	if event is InputEventMouseButton:
-		# clic izquierdo: agregar nodo
 		if event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
 			if route_manager.is_editing:
 				route_manager.handle_input(mouse_pos)
 			else:
-				# si no estamos editando, intentamos agarrar una ruta existente
 				_try_click_existing_route_end(mouse_pos)
 		
-		# clic derecho: terminar ruta
 		elif event.button_index == MOUSE_BUTTON_RIGHT and event.pressed:
 			route_manager.finish_route()
 			
 	elif event is InputEventMouseMotion:
-		# movimiento: actualizar preview
 		route_manager.update_preview(mouse_pos)
-		# dibujo sosteniendo
 		if Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT) and route_manager.is_editing:
 			route_manager.handle_input(mouse_pos)
 
-# funcion auxiliar para detectar clics en las puntas de las rutas
 func _try_click_existing_route_end(mouse_pos: Vector2):
-	var snap_range = route_manager._snap_distance # usamos la misma distancia de iman
+	var snap_range = route_manager._snap_distance 
 	
 	for pid in route_manager.active_routes:
 		var line = route_manager.active_routes[pid]
 		if line.get_point_count() > 0:
 			var end_point = line.points[line.get_point_count() - 1]
-			
-			# si hicimos clic cerca del final de esta ruta
 			if mouse_pos.distance_to(end_point) < snap_range:
 				route_manager.resume_editing_route(pid)
-				return # encontramos una, dejamos de buscar
+				return 
 
 # --- callbacks de jugadores ---
 
-# 1. cuando el jugador pide iniciar ruta:
 func _on_player_start_route_requested(player_node):
 	var pid = player_node.player_id
 	
-	# caso a: el jugador ya tiene una ruta
 	if route_manager.active_routes.has(pid):
-		# en lugar de borrar y salir, le decimos al manager que reanude la edicion.
 		route_manager.resume_editing_route(pid)
 		return 
 
-	# caso b: el jugador no tiene ruta
-	# si estabamos dibujando a otro, guardamos esa primero
 	if route_manager.is_editing and route_manager.current_player_id != pid:
 		route_manager.finish_route()
 	
-	# iniciamos nueva ruta desde cero
 	route_manager.try_start_route(pid, player_node.get_route_anchor())
 
-# 2. cuando el jugador se mueve:
 func _on_player_moved(player_node):
-	# avisamos al manager para que actualice el origen de la linea.
+	#guardamos donde quedó el jugador
+	_active_play_positions[player_node.player_id] = player_node.position
+	
 	route_manager.update_route_origin(player_node.player_id, player_node.get_route_anchor())
 	
-
-## Detiene todas las animaciones de los jugadores en el lienzo
 func stop_all_animations():
 	for child in nodes_container.get_children():
 		if child is Area2D and child.has_method("stop_animation"):
 			child.stop_animation()
 
-## Actualizamos el reset para que sea más profundo
 func reset_current_play():
-	stop_all_animations() # Primero frenamos todo
-	route_manager.clear_all_routes() # Limpiamos líneas
-	rebuild_editor() # Reubicamos jugadores
+	stop_all_animations()
+	route_manager.clear_all_routes()
+	# Para que la nueva jugada use defaults
+	_active_play_positions.clear()
+	rebuild_editor()
 
 func _clear_routes() -> void:
 	if route_manager:
 		route_manager.clear_all_routes()
 
 func _restore_initial_formation() -> void:
-	# reusamos la logica de reconstruccion existente
 	rebuild_editor()
 
 # ==============================================================================
 # PERSISTENCIA Y MEMENTO (LOGICA PLAY DATA)
 # ==============================================================================
 
-## genera el recurso playdata con el estado actual y captura miniatura
 func get_play_resource() -> PlayData:
 	var new_play = PlayData.new()
 	new_play.timestamp = Time.get_unix_time_from_system()
 	
-	# guardar posiciones de jugadores
+	# se usa 'formations' consistentemente
 	for player in nodes_container.get_children():
 		if "player_id" in player:
-			new_play.player_positions[player.player_id] = player.position
+			new_play.formations[player.player_id] = player.position 
 	
-	# guardar puntos de rutas
 	for pid in route_manager.active_routes:
 		var line = route_manager.active_routes[pid]
 		if is_instance_valid(line):
 			new_play.routes[pid] = line.points
 			
-	# capturar imagen para caratula
 	new_play.preview_texture = await get_play_preview_texture()
 	
 	return new_play
 
-## captura el area delimitada manualmente por el cuadro rojo
 func get_play_preview_texture() -> ImageTexture:
-	# esperamos que se renderice el frame actual
 	await get_tree().process_frame
 	await get_tree().process_frame
 	
-	# capturamos la pantalla completa
 	var screenshot: Image = get_viewport().get_texture().get_image()
-	
-	# obtenemos la posicion y tamaño del cuadro manual
-	# get_global_rect nos da las coordenadas exactas de tu rectangulo rojo
 	var frame_rect: Rect2 = capture_frame.get_global_rect()
-	
-	# recorte de seguridad basado en el viewport
 	var viewport_size = get_viewport().get_visible_rect().size
+	
 	var x = clamp(frame_rect.position.x, 0, viewport_size.x)
 	var y = clamp(frame_rect.position.y, 0, viewport_size.y)
 	var w = min(frame_rect.size.x, viewport_size.x - x)
@@ -297,73 +280,74 @@ func get_play_preview_texture() -> ImageTexture:
 	
 	var final_region = Rect2(x, y, w, h)
 
-	# procesar el recorte
 	if w > 0 and h > 0:
 		var cropped_img = screenshot.get_region(final_region)
-		# redimensionamos a un tamaño estandar para la lista ui
 		cropped_img.resize(200, 250, Image.INTERPOLATE_LANCZOS)
 		return ImageTexture.create_from_image(cropped_img)
 	
 	return null
 
-#carga datos desde un recurso (disco) o snapshot (memoria)
 func load_play_data(play_data) -> void:
-	# limpiar el campo antes de cargar
-	if route_manager:
-		route_manager.clear_for_load()
+	print("--- INICIANDO CARGA DE JUGADA ---")
 	
-	# manejo polimorfico para recursos o diccionarios
-	var positions = play_data.get("player_positions") if play_data is Dictionary else play_data.player_positions
-	var routes = play_data.get("routes") if play_data is Dictionary else play_data.routes
+	if has_method("reset_current_play"):
+		# Hacemos limpieza manual segura para carga
+		stop_all_animations()
+		route_manager.clear_all_routes()
 	
-	for player in nodes_container.get_children():
-		if player is Area2D: # y player.has_method("execute_route")
-			# Buscamos la ruta guardada, si no existe devolvemos un array vacío
-			var saved_route = play_data.routes.get(player.player_id, PackedVector2Array())
+	var positions_data = {}
+	var routes_data = {}
+	
+	if play_data is Resource:
+		if "formations" in play_data:
+			positions_data = play_data.formations
+		if "routes" in play_data:
+			routes_data = play_data.routes
 			
-			# Asignación segura
+	elif play_data is Dictionary:
+		positions_data = play_data.get("formations", {})
+		routes_data = play_data.get("routes", {})
+	
+	# Llenamos el caché con los datos del disco
+	_active_play_positions = positions_data.duplicate()
+	
+	# Forzamos la reconstrucción para que render_formation use la memoria nueva
+	rebuild_editor()
+	
+	# Sincronizamos rutas y detalles extra
+	for child in nodes_container.get_children():
+		if child is Area2D and "player_id" in child:
+			var p_id = child.player_id
+			if _active_play_positions.has(p_id):
+				# Actualizamos "casa" para el reset
+				child.save_starting_position()
+				if route_manager:
+					route_manager.update_route_origin(p_id, child.get_route_anchor(), true)
+
+	# Restaurar rutas visuales
+	if route_manager:
+		route_manager.load_routes_from_data(routes_data)
+		
+	# Asignar rutas lógicas
+	for player in nodes_container.get_children():
+		if player is Area2D:
+			var p_id = player.player_id
+			var saved_route = routes_data.get(p_id, PackedVector2Array())
 			if "current_route" in player:
 				player.current_route = saved_route
-			
-	# restaurar posiciones de jugadores
-	_restore_player_positions(positions)
-	# restaurar rutas
-	_restore_routes(routes)
-
-func _restore_player_positions(positions: Dictionary) -> void:
-	for player in nodes_container.get_children():
-		if "player_id" in player:
-			var id = player.player_id
-			if positions.has(id):
-				player.position = positions[id]
-				# emitimos la señal para que si hay una ruta iniciada, se mueva
-				player.moved.emit(player)
-
-func _restore_routes(routes: Dictionary) -> void:
-	if route_manager:
-		route_manager.load_routes_from_data(routes)
 
 func play_current_play():
-	# Obtenemos todas las rutas dibujadas actualmente
-	# RouteManager tiene un método para devolver las rutas por ID
 	var all_routes = route_manager.get_all_routes() 
 	
 	for player in nodes_container.get_children():
 		if player is Area2D and player.has_method("play_route"):
-			# Asignamos la ruta correspondiente al jugador según su ID
-			# Si no tiene ruta dibujada, le pasamos un array vacío
 			player.current_route = all_routes.get(player.player_id, PackedVector2Array())
-			
 			player.play_route()
 
-## limpia y reinicia la formación antes de un nuevo preview
 func prepare_preview():
-	# Guardamos el estado actual para poder volver si fuera necesario
-	# Reconstruimos para asegurar que todos inicien en el origen
 	rebuild_editor()
 	await get_tree().process_frame
 	
-## Desbloquea a todos los jugadores para que vuelvan a ser editables
 func unlock_all_players():
 	for child in nodes_container.get_children():
 		if child is Area2D:
@@ -371,34 +355,25 @@ func unlock_all_players():
 			if child.has_method("stop_animation"):
 				child.stop_animation()
 
-## Restablece todo el lienzo al estado inicial de formación
 func reset_formation_state():
-	# detenemos cualquier animación activa antes de mover nada
 	stop_all_animations()
 	
 	for child in nodes_container.get_children():
 		if child is Area2D and child.has_method("reset_to_start"):
-			# el jugador vuelve a su posición inicial guardada
 			child.reset_to_start()
-			
-			# se fuerza al RouteManager a que mueva el 
-			# inicio de la línea a la posición reseteada del jugador.
 			if route_manager:
 				route_manager.update_route_origin(child.player_id, child.get_route_anchor())
 	
-	# desbloqueamos el editor para permitir nuevas ediciones
 	unlock_editor_for_editing()
 
-## bloquea todo el sistema para la ejecución
 func lock_editor_for_play():
 	route_manager.set_locked(true)
 	for child in nodes_container.get_children():
 		if child is Area2D:
-			child.input_pickable = false # evita que el mouse los detecte
+			child.input_pickable = false 
 			if child.has_method("stop_animation"):
 				child.is_playing = true
 
-## desbloquea todo para volver a editar
 func unlock_editor_for_editing():
 	route_manager.set_locked(false)
 	for child in nodes_container.get_children():
@@ -406,3 +381,19 @@ func unlock_editor_for_editing():
 			child.input_pickable = true
 			if child.has_method("reset_to_start"):
 				child.reset_to_start()
+
+func get_current_state_as_data() -> PlayData:
+	var data = PlayData.new()
+	
+	var formations = {}
+	for player in nodes_container.get_children():
+		if player is Area2D:
+			formations[player.player_id] = player.starting_position
+	data.formations = formations
+	
+	data.routes = route_manager.get_all_routes()
+	
+	return data
+
+func _on_child_action_finished(_node = null):
+	content_changed.emit()
