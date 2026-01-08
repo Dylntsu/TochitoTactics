@@ -45,30 +45,6 @@ func _ready():
 		style.anti_aliasing = true
 		visual_panel.add_theme_stylebox_override("panel", style)
 
-func _process(_delta):
-	if is_dragging:
-		var target_pos = get_global_mouse_position() - drag_offset
-		
-		if limit_rect.has_area():
-			var size_x = visual_panel.size.x if visual_panel else 64.0
-			var size_y = visual_panel.size.y if visual_panel else 64.0
-				
-			var radius_x = (size_x * scale.x) / 2.0
-			var radius_y = (size_y * scale.y) / 2.0
-			
-			var min_x = limit_rect.position.x + radius_x
-			var max_x = limit_rect.end.x - radius_x
-			var min_y = limit_rect.position.y + radius_y
-			var max_y = limit_rect.end.y - radius_y
-			
-			if min_x > max_x: target_pos.x = limit_rect.get_center().x
-			else: target_pos.x = clamp(target_pos.x, min_x, max_x)
-				
-			if min_y > max_y: target_pos.y = limit_rect.get_center().y
-			else: target_pos.y = clamp(target_pos.y, min_y, max_y)
-		
-		global_position = target_pos
-		moved.emit(self)
 
 # ==============================================================================
 # LÓGICA DE ANIMACIÓN (CONTROL PROFESIONAL)
@@ -132,24 +108,6 @@ func _input(event):
 	if is_dragging and event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_RIGHT and not event.pressed:
 		stop_dragging()
 
-func start_dragging():
-	is_dragging = true
-	drag_offset = get_global_mouse_position() - global_position
-	modulate.a = 0.7
-	scale = Vector2(1.2, 1.2)
-	z_index = 50
-
-func stop_dragging():
-	is_dragging = false
-	modulate.a = 1.0
-	scale = Vector2(1.0, 1.0)
-	z_index = 20
-	
-	save_starting_position() 
-	
-	# avisamos que terminamos de interactuar
-	interaction_ended.emit()
-
 ## Guarda la posición actual como el punto de inicio oficial
 func save_starting_position():
 	starting_position = position
@@ -177,11 +135,14 @@ func setup_player_visual(texture: Texture2D, id: int):
 		if original_size.x > 0 and original_size.y > 0:
 			# Buscamos el lado más largo (ancho o alto)
 			var max_side = max(original_size.x, original_size.y)
+			
 			# Calculamos la escala necesaria para llegar al tamaño objetivo
 			var scale_factor = target_head_size / max_side
+			
+			scale_factor = snapped(scale_factor, 0.001)
+			
 			sprite.scale = Vector2(scale_factor, scale_factor)
 			
-			# Opcional: Centrar el sprite si no lo está en el editor
 			sprite.centered = true
 	
 	if label:
@@ -189,3 +150,54 @@ func setup_player_visual(texture: Texture2D, id: int):
 		label.text = str(id + 1)
 		# Posicionamos el label un poco arriba de la cabeza dinámicamente
 		label.position.y = -(target_head_size / 2.0) - 15
+
+func start_dragging():
+	is_dragging = true
+	drag_offset = get_global_mouse_position() - global_position
+	modulate.a = 0.7
+	
+	# Mantenemos tu efecto de "POP" (Zoom) al agarrarlo
+	scale = Vector2(1.2, 1.2) 
+	z_index = 50
+
+func stop_dragging():
+	is_dragging = false
+	modulate.a = 1.0
+	
+	# Regresamos a la escala normal del nodo padre
+	scale = Vector2(1.0, 1.0)
+	z_index = 20
+	
+	#Al soltar, forzamos que caiga en un pixel entero para que se vea nítido
+	position = position.round()
+	
+	save_starting_position() 
+	
+	# avisamos que terminamos de interactuar
+	interaction_ended.emit()
+	
+func _process(_delta):
+	if is_dragging:
+		var target_pos = get_global_mouse_position() - drag_offset
+		
+		if limit_rect.has_area():
+			var size_x = visual_panel.size.x if visual_panel else 64.0
+			var size_y = visual_panel.size.y if visual_panel else 64.0
+				
+			var radius_x = (size_x * scale.x) / 2.0
+			var radius_y = (size_y * scale.y) / 2.0
+			
+			var min_x = limit_rect.position.x + radius_x
+			var max_x = limit_rect.end.x - radius_x
+			var min_y = limit_rect.position.y + radius_y
+			var max_y = limit_rect.end.y - radius_y
+			
+			if min_x > max_x: target_pos.x = limit_rect.get_center().x
+			else: target_pos.x = clamp(target_pos.x, min_x, max_x)
+				
+			if min_y > max_y: target_pos.y = limit_rect.get_center().y
+			else: target_pos.y = clamp(target_pos.y, min_y, max_y)
+		
+		# Mientras se mueve, redondeamos la posición para evitar el efecto de "temblor" o deformación
+		global_position = target_pos.round()
+		moved.emit(self)

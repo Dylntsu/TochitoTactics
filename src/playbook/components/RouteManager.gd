@@ -25,6 +25,10 @@ var is_editing: bool = false
 var current_player_id: int = -1
 var current_dist_accumulator: float = 0.0
 var is_locked: bool = false
+# Variable para saber hasta dónde pueden llegar las líneas
+var limit_rect: Rect2 = Rect2(0, 0, 1920, 1080) 
+var margin = 10.0 # Píxeles de separación del borde
+var safe_limit: Rect2 # Crea un rectángulo 10px más pequeño hacia adentro
 
 var _grid_points: Array[Vector2]
 var _spacing: int
@@ -39,7 +43,12 @@ func set_locked(value: bool):
 	if is_locked:
 		# Si bloqueamos mientras se editaba, cancelamos inmediatamente
 		cancel_editing()
-
+		
+func set_field_limits(rect: Rect2):
+	limit_rect = rect
+	safe_limit = limit_rect.grow(-margin)
+	
+	
 func setup(grid_points: Array[Vector2], spacing: int, field_bounds: Rect2):
 	_grid_points = grid_points
 	_spacing = spacing
@@ -49,28 +58,56 @@ func setup(grid_points: Array[Vector2], spacing: int, field_bounds: Rect2):
 	_dash_texture = _generate_dash_texture()
 
 # --- ANCLAJE DE RUTA ---
+
 func update_route_origin(player_id: int, new_origin: Vector2, force: bool = false):
-	# Si está bloqueado y no es un movimiento forzado se ignora
-	if is_locked and not force: 
-		return
+	if is_locked and not force: return
 	
 	if active_routes.has(player_id):
 		var line = active_routes[player_id]
-		if line.get_point_count() > 0:
+		var point_count = line.get_point_count()
+		
+		if point_count > 1:
 			var old_origin = line.get_point_position(0)
+			var first_target = line.get_point_position(1)
 			
-			# sincronizamos la distancia: si el jugador se aleja o acerca al primer punto,
-			# recalculamos la distancia total de la ruta para evitar errores en el color de la línea.
-			if line.get_point_count() > 1:
-				var first_target = line.get_point_position(1)
-				var old_dist = old_origin.distance_to(first_target)
-				var new_dist = new_origin.distance_to(first_target)
+			# Cálculo de desplazamiento
+			var old_dist = old_origin.distance_to(first_target)
+			var new_dist = new_origin.distance_to(first_target)
+			var diff = new_dist - old_dist
+			
+			var last_idx = point_count - 1
+			var prev_idx = point_count - 2
+			var last_p = line.get_point_position(last_idx)
+			var prev_p = line.get_point_position(prev_idx)
+			
+			var direction = (last_p - prev_p).normalized()
+			var target_last_p = last_p - (direction * diff)
+			
+			# === BLOQUEO ESTRICTO CON CAPTURE FRAME ===
+			if limit_rect.has_area():
+				var padding = 20.0 # Margen interno para que la flecha no toque el borde
 				
-				# actualizamos el acumulador de distancia del jugador específico
-				if route_distances.has(player_id):
-					route_distances[player_id] += (new_dist - old_dist)
+				# Convertimos el Rect global del CaptureFrame al espacio de la línea
+				var local_min = line.to_local(limit_rect.position)
+				var local_max = line.to_local(limit_rect.end)
+				
+				# límites matemáticos
+				var min_x = min(local_min.x, local_max.x) + padding
+				var max_x = max(local_min.x, local_max.x) - padding
+				var min_y = min(local_min.y, local_max.y) + padding
+				var max_y = max(local_min.y, local_max.y) - padding
+				
+				# Aplicamos el clamp a la posición final calculada
+				target_last_p.x = clamp(target_last_p.x, min_x, max_x)
+				target_last_p.y = clamp(target_last_p.y, min_y, max_y)
 			
-			# ajustamos físicamente el primer punto de la Line2D
+			# Aplicar cambios a la línea
+			if prev_p.distance_to(target_last_p) > 10.0:
+				line.set_point_position(last_idx, target_last_p)
+				if route_distances.has(player_id):
+					route_distances[player_id] += diff
+			
+			# Mover el anclaje del jugador
 			line.set_point_position(0, new_origin)
 
 func try_start_route(player_id: int, start_pos: Vector2) -> bool:
@@ -95,14 +132,21 @@ func try_start_route(player_id: int, start_pos: Vector2) -> bool:
 	return true
 
 func handle_input(mouse_pos: Vector2):
-	# Verificación de bloqueo y estado de edición
 	if is_locked or not is_editing: return
 	
-	if _field_bounds.has_area() and not _field_bounds.has_point(mouse_pos): return 
+	# Chequeo inicial del mouse
+	if _field_bounds.has_area() and not _field_bounds.has_point(to_global(mouse_pos)): 
+		# Si FieldEditor está en 0,0, funciona. Si no, usa to_global(mouse_pos).
+		return 
 	
 	var closest = _get_closest_node(mouse_pos)
 	if closest == Vector2.INF: return
 	
+	# Para mayor seguridad convertimos
+	if _field_bounds.has_area() and not _field_bounds.has_point(to_global(closest)):
+		return # Ignoramos este punto si la grilla se sale del campo
+	# =============================
+
 	if current_route.has(closest):
 		var idx = current_route.find(closest)
 		_recalculate_current_distance(idx)
@@ -129,6 +173,10 @@ func handle_input(mouse_pos: Vector2):
 	if current_dist_accumulator + dist_cost_preview > max_total_distance_pixels: return 
 
 	for p in points_to_add:
+		# Verificamos cada punto intermedio también
+		if _field_bounds.has_area() and not _field_bounds.has_point(to_global(p)):
+			continue 
+			
 		if not current_route.has(p):
 			current_route.append(p)
 			current_dist_accumulator += last_node.distance_to(p)

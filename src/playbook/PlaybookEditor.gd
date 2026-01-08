@@ -68,10 +68,31 @@ var _active_play_positions: Dictionary = {}
 # ==============================================================================
 func _ready():
 	get_viewport().size_changed.connect(_on_viewport_resized)
+	
+	# Esperamos dos frames para asegurar que el Layout de Godot se asentó
 	await get_tree().process_frame
-	rebuild_editor()
+	await get_tree().process_frame
+	
 	if route_manager:
+		var field = get_node_or_null("CanvasLayer/Background")
+		
+		if field:
+			var rect = field.get_global_rect()
+			
+			# Si el rect sale en 0 o muy pequeño, intentamos forzarlo por su tamaño de textura
+			if rect.size.x < 10:
+				rect = Rect2(field.global_position, field.get_rect().size * field.global_scale)
+			
+			route_manager.limit_rect = rect
+			print("Límites del campo verde (CORREGIDOS): ", route_manager.limit_rect)
+		else:
+			# Límites de emergencia 
+			route_manager.limit_rect = Rect2(0, 0, 1280, 720)
+			push_warning("Background no encontrado, usando límites por defecto")
+		
 		route_manager.route_modified.connect(_on_child_action_finished)
+	
+	rebuild_editor()
 
 func _on_viewport_resized():
 	rebuild_editor()
@@ -86,7 +107,13 @@ func rebuild_editor():
 	render_grid_visuals()
 	render_formation() 
 	
-	# usamos 'background.get_global_rect()' para los limites totales de la cancha
+	# === CAPTURE FRAME ===
+	if capture_frame:
+		# Obtenemos el área exacta del nodo CaptureFrame
+		var frame_rect = capture_frame.get_global_rect()
+		route_manager.set_field_limits(frame_rect)
+	
+	# Setup normal para la grilla
 	route_manager.setup(grid_points, spacing, background.get_global_rect())
 
 # ==============================================================================
@@ -115,14 +142,14 @@ func render_grid_visuals():
 		nodes_container.add_child(marker)
 
 func render_formation():
-	# 1. Limpieza de jugadores previos
+	# Limpieza de jugadores previos
 	for child in nodes_container.get_children():
 		if child.name.begins_with("PlayerStart") or child is Area2D:
 			child.queue_free()
 
 	var field_rect = background.get_global_rect()
 	
-	# 2. Cálculos de límites y áreas de formación
+	# Cálculos de límites y áreas de formación
 	var formation_start_x = field_rect.position.x + (field_rect.size.x * formation_margin_left)
 	var formation_end_x = field_rect.position.x + field_rect.size.x * (1.0 - formation_margin_right)
 	var formation_width = formation_end_x - formation_start_x
@@ -139,16 +166,16 @@ func render_formation():
 	
 	var qb_index = int(player_count / 2)
 	
-	# 3. Creación y configuración de jugadores
+	# Creación y configuración de jugadores
 	for i in range(player_count):
 		var player = player_scene.instantiate()
 		player.player_id = i
 		
-		# --- NUEVA LÓGICA DE IDENTIDAD VISUAL ---
+		# ---LÓGICA DE IDENTIDAD VISUAL ---
 		# Asignamos una textura del array 'player_textures' usando el ID
 		if player_textures.size() > 0:
 			var tex = player_textures[i % player_textures.size()]
-			# Configuramos el sprite y el número (Label) en el Player.gd
+			# Configuramos el sprite y el número en el Player.gd
 			player.setup_player_visual(tex, i)
 		
 		# Cálculo de posición por defecto
@@ -162,7 +189,7 @@ func render_formation():
 		final_y = clamp(final_y, limit_rect.position.y + safety_margin, limit_rect.end.y - safety_margin)
 		pos_x = clamp(pos_x, limit_rect.position.x + safety_margin, limit_rect.end.x - safety_margin)
 		
-		# Memoria de posición: Respetamos si el jugador fue movido o cargado previamente
+		# Memoria de posición- Respetamos si el jugador fue movido o cargado previamente
 		if _active_play_positions.has(i):
 			player.position = _active_play_positions[i]
 		else:
@@ -172,14 +199,14 @@ func render_formation():
 		player.limit_rect = limit_rect 
 		player.save_starting_position() 
 		
-		# 4. Conexiones de señales
+		# Conexiones de señales
 		player.start_route_requested.connect(_on_player_start_route_requested)
 		player.moved.connect(_on_player_moved)
 		
 		if not player.interaction_ended.is_connected(_on_child_action_finished):
 			player.interaction_ended.connect(_on_child_action_finished)
 		
-		# Agregamos al contenedor al final para asegurar que 'setup' ya terminó
+		# Agregamos al contenedor al final para asegurar que setup ya terminó
 		nodes_container.add_child(player)
 
 func get_offensive_zone_limit_y() -> float:
@@ -241,7 +268,8 @@ func _on_player_moved(player_node):
 	#guardamos donde quedó el jugador
 	_active_play_positions[player_node.player_id] = player_node.position
 	
-	route_manager.update_route_origin(player_node.player_id, player_node.get_route_anchor())
+	if route_manager:
+		route_manager.update_route_origin(player_node.player_id, player_node.get_route_anchor())
 	
 func stop_all_animations():
 	for child in nodes_container.get_children():
@@ -270,7 +298,7 @@ func get_play_resource() -> PlayData:
 	var new_play = PlayData.new()
 	new_play.timestamp = Time.get_unix_time_from_system()
 	
-	# se usa 'formations' consistentemente
+	# se usa formations consistentemente
 	for player in nodes_container.get_children():
 		if "player_id" in player:
 			new_play.formations[player.player_id] = player.position 
@@ -338,7 +366,7 @@ func load_play_data(play_data) -> void:
 		if child is Area2D and "player_id" in child:
 			var p_id = child.player_id
 			if _active_play_positions.has(p_id):
-				# Actualizamos "casa" para el reset
+				# Actualizamos casa para el reset
 				child.save_starting_position()
 				if route_manager:
 					route_manager.update_route_origin(p_id, child.get_route_anchor(), true)

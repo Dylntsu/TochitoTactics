@@ -9,23 +9,23 @@ radius = 22.803509
 load_path = "res://.godot/imported/face_03.png-283476eb19f533442b266bd42e0f7e57.ctex"
 
 [node name="Player" type="Area2D"]
+z_index = 15
 script = ExtResource("1_enjsy")
 target_head_size = 72.205
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
-position = Vector2(19, 19)
 shape = SubResource("CircleShape2D_57wkv")
+metadata/_edit_lock_ = true
 
 [node name="Panel" type="Panel" parent="."]
 visible = false
-offset_right = 40.0
-offset_bottom = 40.0
 mouse_filter = 2
+metadata/_edit_lock_ = true
 
 [node name="Sprite2D" type="Sprite2D" parent="."]
-position = Vector2(18.594461, 18.537846)
-scale = Vector2(1.1822189, 1.1822186)
+texture_filter = 1
 texture = SubResource("CompressedTexture2D_enjsy")
+metadata/_edit_lock_ = true
 
 [node name="Label" type="Label" parent="."]
 unique_name_in_owner = true
@@ -35,3 +35,4 @@ offset_bottom = 23.0
 text = "5"
 horizontal_alignment = 1
 vertical_alignment = 1
+metadata/_edit_lock_ = true
