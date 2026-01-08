@@ -58,7 +58,6 @@ func setup(grid_points: Array[Vector2], spacing: int, field_bounds: Rect2):
 	_dash_texture = _generate_dash_texture()
 
 # --- ANCLAJE DE RUTA ---
-
 func update_route_origin(player_id: int, new_origin: Vector2, force: bool = false):
 	if is_locked and not force: return
 	
@@ -70,7 +69,6 @@ func update_route_origin(player_id: int, new_origin: Vector2, force: bool = fals
 			var old_origin = line.get_point_position(0)
 			var first_target = line.get_point_position(1)
 			
-			# Cálculo de desplazamiento
 			var old_dist = old_origin.distance_to(first_target)
 			var new_dist = new_origin.distance_to(first_target)
 			var diff = new_dist - old_dist
@@ -83,60 +81,38 @@ func update_route_origin(player_id: int, new_origin: Vector2, force: bool = fals
 			var direction = (last_p - prev_p).normalized()
 			var target_last_p = last_p - (direction * diff)
 			
-			# === BLOQUEO ESTRICTO CON CAPTURE FRAME ===
+			# Si el movimiento hacia atrás colapsa el segmento, borramos el punto (Backtracking)
+			if prev_p.distance_to(target_last_p) < 5.0 and point_count > 2:
+				line.remove_point(last_idx)
+				update_route_origin(player_id, new_origin, force)
+				return
+
+			# Clamping con CaptureFrame
 			if limit_rect.has_area():
-				var padding = 20.0 # Margen interno para que la flecha no toque el borde
-				
-				# Convertimos el Rect global del CaptureFrame al espacio de la línea
+				var padding = 20.0 
 				var local_min = line.to_local(limit_rect.position)
 				var local_max = line.to_local(limit_rect.end)
 				
-				# límites matemáticos
 				var min_x = min(local_min.x, local_max.x) + padding
 				var max_x = max(local_min.x, local_max.x) - padding
 				var min_y = min(local_min.y, local_max.y) + padding
 				var max_y = max(local_min.y, local_max.y) - padding
 				
-				# Aplicamos el clamp a la posición final calculada
 				target_last_p.x = clamp(target_last_p.x, min_x, max_x)
 				target_last_p.y = clamp(target_last_p.y, min_y, max_y)
 			
-			# Aplicar cambios a la línea
-			if prev_p.distance_to(target_last_p) > 10.0:
-				line.set_point_position(last_idx, target_last_p)
-				if route_distances.has(player_id):
-					route_distances[player_id] += diff
+			line.set_point_position(last_idx, target_last_p)
+			if route_distances.has(player_id):
+				route_distances[player_id] += diff
 			
-			# Mover el anclaje del jugador
 			line.set_point_position(0, new_origin)
-
-func try_start_route(player_id: int, start_pos: Vector2) -> bool:
-	# Verificación de bloqueo antes de iniciar edición
-	if is_locked: return false 
-
-	if active_routes.has(player_id):
-		var old_line = active_routes[player_id]
-		if is_instance_valid(old_line): old_line.queue_free()
-		active_routes.erase(player_id)
-		route_distances.erase(player_id)
-		if is_editing and current_player_id == player_id: cancel_editing()
-		return false 
-
-	if is_editing and current_player_id != player_id: cancel_editing()
-	
-	is_editing = true
-	current_player_id = player_id
-	current_route = [start_pos]
-	current_dist_accumulator = 0.0
-	update_visuals()
-	return true
 
 func handle_input(mouse_pos: Vector2):
 	if is_locked or not is_editing: return
 	
 	# Chequeo inicial del mouse
 	if _field_bounds.has_area() and not _field_bounds.has_point(to_global(mouse_pos)): 
-		# Si FieldEditor está en 0,0, funciona. Si no, usa to_global(mouse_pos).
+		# Si FieldEditor está en 0,0, funciona. Si no, usa to_global
 		return 
 	
 	var closest = _get_closest_node(mouse_pos)
@@ -355,3 +331,35 @@ func get_all_routes() -> Dictionary:
 	for p_id in active_routes.keys():
 		routes_dict[p_id] = active_routes[p_id].get_points() 
 	return routes_dict
+
+func try_start_route(player_id: int, start_pos: Vector2) -> bool:
+	#  Verificación de bloqueo global
+	if is_locked: 
+		return false 
+
+	# Si el jugador ya tiene una ruta, la borramos para iniciar una nueva
+	if active_routes.has(player_id):
+		var old_line = active_routes[player_id]
+		if is_instance_valid(old_line): 
+			old_line.queue_free()
+		active_routes.erase(player_id)
+		route_distances.erase(player_id)
+		
+		# Si estábamos justo editando esta ruta, cancelamos el estado actual
+		if is_editing and current_player_id == player_id: 
+			cancel_editing()
+		return false 
+
+	# Si estábamos editando a OTRO jugador guardamos su ruta antes de empezar la nueva
+	if is_editing and current_player_id != player_id: 
+		finish_route()
+	
+	# Inicializamos el estado de edición para el nuevo jugador
+	is_editing = true
+	current_player_id = player_id
+	current_route = [start_pos]
+	current_dist_accumulator = 0.0
+	
+	# se actualizan los visuales
+	update_visuals()
+	return true
