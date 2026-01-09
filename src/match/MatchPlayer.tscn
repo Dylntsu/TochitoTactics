@@ -1,0 +1,260 @@
+[gd_scene load_steps=6 format=3 uid="uid://ckn0rdmja4fma"]
+
+[ext_resource type="Script" uid="uid://cgiy3uu4qb8w8" path="res://src/playbook/PlaybookEditor.gd" id="1_if8xs"]
+[ext_resource type="Texture2D" uid="uid://dl8pi2jccrcsr" path="res://assets/sprites/tocho_tactics_background.png" id="2_q31dk"]
+[ext_resource type="Script" uid="uid://v5bcnk3p7uvc" path="res://src/playbook/components/RouteManager.gd" id="3_ttpbx"]
+[ext_resource type="Script" uid="uid://b8arbw6hrqmw7" path="res://src/playbook/PlaybookUI.gd" id="4_r7odd"]
+
+[sub_resource type="LabelSettings" id="LabelSettings_sigk0"]
+font_size = 46
+shadow_size = 10
+
+[node name="MatchPlayer" type="Node2D"]
+script = ExtResource("1_if8xs")
+formation_y_offset = 2.301
+qb_depth_offset = 0.989
+spawn_vertical_offset = 0.665
+grid_margin_bottom = 0.014
+grid_margin_left = 0.412
+grid_margin_right = 0.411
+formation_margin_left = 0.389
+formation_margin_right = 0.409
+metadata/_edit_lock_ = true
+
+[node name="Background2" type="TextureRect" parent="."]
+visible = false
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 391.00003
+offset_top = -734.0
+offset_right = 1000.0
+offset_bottom = 868.0
+grow_horizontal = 2
+grow_vertical = 2
+scale = Vector2(0.71998096, 0.86441994)
+size_flags_horizontal = 8
+size_flags_vertical = 8
+texture = ExtResource("2_q31dk")
+stretch_mode = 3
+metadata/_edit_use_anchors_ = true
+metadata/_edit_lock_ = true
+
+[node name="MatchUI" type="CanvasLayer" parent="."]
+layer = -1
+
+[node name="Background" type="TextureRect" parent="MatchUI"]
+unique_name_in_owner = true
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -454.0
+offset_top = -669.0
+offset_right = -454.0
+offset_bottom = -669.0
+grow_horizontal = 2
+grow_vertical = 2
+scale = Vector2(1.6729074, 1.9270275)
+size_flags_horizontal = 8
+size_flags_vertical = 8
+texture = ExtResource("2_q31dk")
+expand_mode = 1
+stretch_mode = 5
+metadata/_edit_use_anchors_ = true
+metadata/_edit_lock_ = true
+
+[node name="HUDMain" type="Control" parent="MatchUI"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="TopCenterAnchor" type="CenterContainer" parent="MatchUI/HUDMain"]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -20.0
+offset_right = 20.0
+offset_bottom = 40.0
+grow_horizontal = 2
+
+[node name="ScorePanel" type="TextureRect" parent="MatchUI/HUDMain/TopCenterAnchor"]
+layout_mode = 2
+
+[node name="ScoreVBox" type="VBoxContainer" parent="MatchUI/HUDMain/TopCenterAnchor/ScorePanel"]
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="TimeLabel" type="Label" parent="MatchUI/HUDMain/TopCenterAnchor/ScorePanel/ScoreVBox"]
+layout_mode = 2
+
+[node name="DownLabel" type="Label" parent="MatchUI/HUDMain/TopCenterAnchor/ScorePanel/ScoreVBox"]
+layout_mode = 2
+
+[node name="LeftPanelAnchor" type="Control" parent="MatchUI/HUDMain"]
+layout_mode = 1
+anchors_preset = 4
+anchor_top = 0.5
+anchor_bottom = 0.5
+offset_top = -20.0
+offset_right = 40.0
+offset_bottom = 20.0
+grow_vertical = 2
+
+[node name="StatsBackground" type="NinePatchRect" parent="MatchUI/HUDMain/LeftPanelAnchor"]
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="ProfileContainer" type="VBoxContainer" parent="MatchUI/HUDMain/LeftPanelAnchor/StatsBackground"]
+layout_mode = 0
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="HeaderHBox" type="HBoxContainer" parent="MatchUI/HUDMain/LeftPanelAnchor/StatsBackground/ProfileContainer"]
+layout_mode = 2
+
+[node name="AvatarCircle" type="TextureRect" parent="MatchUI/HUDMain/LeftPanelAnchor/StatsBackground/ProfileContainer/HeaderHBox"]
+layout_mode = 2
+
+[node name="NameBanner" type="NinePatchRect" parent="MatchUI/HUDMain/LeftPanelAnchor/StatsBackground/ProfileContainer/HeaderHBox"]
+layout_mode = 2
+
+[node name="StaminaBarContainer" type="VBoxContainer" parent="MatchUI/HUDMain/LeftPanelAnchor/StatsBackground/ProfileContainer"]
+layout_mode = 2
+
+[node name="StaminaBar" type="TextureProgressBar" parent="MatchUI/HUDMain/LeftPanelAnchor/StatsBackground/ProfileContainer/StaminaBarContainer"]
+layout_mode = 2
+
+[node name="AttributesGrid" type="GridContainer" parent="MatchUI/HUDMain/LeftPanelAnchor/StatsBackground/ProfileContainer"]
+layout_mode = 2
+columns = 2
+
+[node name="GuepardoIcon" type="TextureRect" parent="MatchUI/HUDMain/LeftPanelAnchor/StatsBackground/ProfileContainer/AttributesGrid"]
+layout_mode = 2
+
+[node name="VelocityLabel" type="Label" parent="MatchUI/HUDMain/LeftPanelAnchor/StatsBackground/ProfileContainer/AttributesGrid"]
+layout_mode = 2
+
+[node name="HandIcon" type="TextureRect" parent="MatchUI/HUDMain/LeftPanelAnchor/StatsBackground/ProfileContainer/AttributesGrid"]
+layout_mode = 2
+
+[node name="HandsLabel" type="Label" parent="MatchUI/HUDMain/LeftPanelAnchor/StatsBackground/ProfileContainer/AttributesGrid"]
+layout_mode = 2
+
+[node name="StaminaIcon" type="TextureRect" parent="MatchUI/HUDMain/LeftPanelAnchor/StatsBackground/ProfileContainer/AttributesGrid"]
+layout_mode = 2
+
+[node name="StaminaLabel" type="Label" parent="MatchUI/HUDMain/LeftPanelAnchor/StatsBackground/ProfileContainer/AttributesGrid"]
+layout_mode = 2
+
+[node name="ArmIcon" type="TextureRect" parent="MatchUI/HUDMain/LeftPanelAnchor/StatsBackground/ProfileContainer/AttributesGrid"]
+layout_mode = 2
+
+[node name="ArmLabel" type="Label" parent="MatchUI/HUDMain/LeftPanelAnchor/StatsBackground/ProfileContainer/AttributesGrid"]
+layout_mode = 2
+
+[node name="AgilityIcon" type="TextureRect" parent="MatchUI/HUDMain/LeftPanelAnchor/StatsBackground/ProfileContainer/AttributesGrid"]
+layout_mode = 2
+
+[node name="AgilityLabel" type="Label" parent="MatchUI/HUDMain/LeftPanelAnchor/StatsBackground/ProfileContainer/AttributesGrid"]
+layout_mode = 2
+
+[node name="BrainIcon" type="TextureRect" parent="MatchUI/HUDMain/LeftPanelAnchor/StatsBackground/ProfileContainer/AttributesGrid"]
+layout_mode = 2
+
+[node name="BrainLabel" type="Label" parent="MatchUI/HUDMain/LeftPanelAnchor/StatsBackground/ProfileContainer/AttributesGrid"]
+layout_mode = 2
+
+[node name="HidePanelBtn" type="Button" parent="MatchUI/HUDMain/LeftPanelAnchor/StatsBackground/ProfileContainer"]
+layout_mode = 2
+
+[node name="NodesContainer" type="Node2D" parent="."]
+metadata/_edit_lock_ = true
+
+[node name="RouteLine" type="Line2D" parent="."]
+texture_repeat = 2
+width = 4.0
+default_color = Color(0.274124, 0.8291763, 0, 1)
+joint_mode = 2
+begin_cap_mode = 2
+metadata/_edit_lock_ = true
+
+[node name="PreviewLine" type="Line2D" parent="."]
+z_index = 100
+width = 4.0
+default_color = Color(0.81747544, 1, 0.7742028, 0.5019608)
+joint_mode = 2
+begin_cap_mode = 2
+metadata/_edit_lock_ = true
+
+[node name="RouteManager" type="Node2D" parent="." node_paths=PackedStringArray("route_line", "preview_line")]
+script = ExtResource("3_ttpbx")
+route_line = NodePath("../RouteLine")
+preview_line = NodePath("../PreviewLine")
+metadata/_edit_lock_ = true
+
+[node name="UI_Layer" type="CanvasLayer" parent="." node_paths=PackedStringArray("editor")]
+layer = 10
+script = ExtResource("4_r7odd")
+editor = NodePath("..")
+
+[node name="MainLayout" type="MarginContainer" parent="UI_Layer"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+scale = Vector2(1.0020921, 1.0079132)
+mouse_filter = 2
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_top = 20
+theme_override_constants/margin_right = 20
+theme_override_constants/margin_bottom = 20
+metadata/_edit_lock_ = true
+
+[node name="HBoxContainer" type="HBoxContainer" parent="UI_Layer/MainLayout"]
+layout_mode = 2
+mouse_filter = 2
+metadata/_edit_lock_ = true
+
+[node name="LeftPanel" type="VBoxContainer" parent="UI_Layer/MainLayout/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 0
+mouse_filter = 2
+
+[node name="Label" type="Label" parent="UI_Layer/MainLayout/HBoxContainer/LeftPanel"]
+layout_mode = 2
+text = "Jugadas"
+label_settings = SubResource("LabelSettings_sigk0")
+horizontal_alignment = 1
+
+[node name="ScrollContainer" type="ScrollContainer" parent="UI_Layer/MainLayout/HBoxContainer/LeftPanel"]
+layout_mode = 2
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+
+[node name="PlaysGrid" type="GridContainer" parent="UI_Layer/MainLayout/HBoxContainer/LeftPanel/ScrollContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/h_separation = 7
+theme_override_constants/v_separation = 7
+columns = 2
+
+[node name="AutosaveTimer" type="Timer" parent="UI_Layer"]
+unique_name_in_owner = true
+wait_time = 0.8
+one_shot = true
+
+[node name="CaptureFrame" type="ReferenceRect" parent="."]
+offset_left = 408.0
+offset_top = 4.0
+offset_right = 447.20374
+offset_bottom = 46.860577
+scale = Vector2(10.789793, 16.779829)
+mouse_filter = 2
