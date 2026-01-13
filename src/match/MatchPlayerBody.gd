@@ -10,12 +10,14 @@ extends CharacterBody2D
 @export var agility_stat: int = 4
 @export var game_sense_stat: int = 5
 
-# --- LÓGICA DE PARTIDO ---
+# --- LÓGICA DEL JUEGO ---
 var current_stamina_percentage: float = 100.0 # La barra siempre inicia al 100
 var active_route: Array = []
 var target_index: int = 0
 var is_running: bool = false
 var current_stamina: float = 0.0 # Estamina actual en tiempo real
+
+const WORLD_SPEED_SCALE = 15.0
 
 @onready var anim = $Visuals/AnimatedSprite2D
 
@@ -51,7 +53,9 @@ func _physics_process(delta):
 	# Movimiento y ruta 
 	var target_pos = active_route[target_index]
 	var direction = global_position.direction_to(target_pos)
-	velocity = direction * (speed_stat * 25)
+	velocity = direction * (speed_stat * WORLD_SPEED_SCALE)
+	if current_stamina_percentage <= 0:
+		velocity *= 0.4 # Reduce velocidad si no hay estamina
 	move_and_slide()
 	_update_animation_logic(direction)
 

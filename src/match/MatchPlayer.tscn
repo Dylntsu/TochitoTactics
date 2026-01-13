@@ -122,7 +122,7 @@ stretch_mode = 5
 unique_name_in_owner = true
 texture_filter = 1
 layout_mode = 2
-text = "12"
+text = "---"
 vertical_alignment = 1
 
 [node name="HandIcon" type="TextureRect" parent="MatchUI/HUDMain/LeftPanelAnchor/StatsBackground/AttributesGrid"]
@@ -135,7 +135,7 @@ stretch_mode = 5
 [node name="HandsLabel" type="Label" parent="MatchUI/HUDMain/LeftPanelAnchor/StatsBackground/AttributesGrid"]
 unique_name_in_owner = true
 layout_mode = 2
-text = "8"
+text = "---"
 
 [node name="StaminaIcon" type="TextureRect" parent="MatchUI/HUDMain/LeftPanelAnchor/StatsBackground/AttributesGrid"]
 unique_name_in_owner = true
@@ -147,7 +147,7 @@ stretch_mode = 5
 [node name="StaminaLabel" type="Label" parent="MatchUI/HUDMain/LeftPanelAnchor/StatsBackground/AttributesGrid"]
 unique_name_in_owner = true
 layout_mode = 2
-text = "6"
+text = "---"
 
 [node name="ArmIcon" type="TextureRect" parent="MatchUI/HUDMain/LeftPanelAnchor/StatsBackground/AttributesGrid"]
 unique_name_in_owner = true
@@ -159,7 +159,7 @@ stretch_mode = 5
 [node name="ArmLabel" type="Label" parent="MatchUI/HUDMain/LeftPanelAnchor/StatsBackground/AttributesGrid"]
 unique_name_in_owner = true
 layout_mode = 2
-text = "4"
+text = "---"
 
 [node name="AgilityIcon" type="TextureRect" parent="MatchUI/HUDMain/LeftPanelAnchor/StatsBackground/AttributesGrid"]
 unique_name_in_owner = true
@@ -171,7 +171,7 @@ stretch_mode = 5
 [node name="AgilityLabel" type="Label" parent="MatchUI/HUDMain/LeftPanelAnchor/StatsBackground/AttributesGrid"]
 unique_name_in_owner = true
 layout_mode = 2
-text = "9"
+text = "---"
 
 [node name="BrainIcon" type="TextureRect" parent="MatchUI/HUDMain/LeftPanelAnchor/StatsBackground/AttributesGrid"]
 unique_name_in_owner = true
@@ -183,7 +183,7 @@ stretch_mode = 5
 [node name="BrainLabel" type="Label" parent="MatchUI/HUDMain/LeftPanelAnchor/StatsBackground/AttributesGrid"]
 unique_name_in_owner = true
 layout_mode = 2
-text = "5"
+text = "---"
 
 [node name="PlayerContainer" type="HBoxContainer" parent="MatchUI/HUDMain/LeftPanelAnchor/StatsBackground"]
 layout_mode = 0

@@ -11,7 +11,7 @@ extends CanvasLayer
 
 
 func update_player_stats(data: Dictionary):
-	# 1. Textos básicos 
+	# Textos básicos 
 	if name_label: name_label.text = data["name"]
 	if speed_val: speed_val.text = str(data["speed"])
 	if hands_val: hands_val.text = str(data["hands"])
@@ -23,7 +23,7 @@ func update_player_stats(data: Dictionary):
 	if %StaminaLabel: 
 		%StaminaLabel.text = str(int(data["stamina_display"]))
 
-	# 3. La Barra de Estamina 
+	#La Barra de Estamina 
 	if stamina_bar:
 		stamina_bar.max_value = 100.0
 		stamina_bar.value = data["stamina_current"]
