@@ -186,7 +186,7 @@ animations = [{
 height = 27.3102
 
 [node name="MatchPlayerBody" type="CharacterBody2D"]
-z_index = 10
+z_index = 815
 collision_layer = 2
 collision_mask = 2
 input_pickable = true
@@ -201,6 +201,7 @@ z_index = 10
 scale = Vector2(1.0546408, 1.05368)
 sprite_frames = SubResource("SpriteFrames_6qdns")
 animation = &"idabel_idle_back"
+autoplay = "idabel_idle_back"
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 position = Vector2(0, 2.0000005)

@@ -1,6 +1,6 @@
 extends CharacterBody2D
 
-# --- ESTADÍSTICAS PARA LA UI AZUL ---
+# --- STATS PARA LA UI ---
 @export_group("Atleta Stats")
 @export var player_name: String = "Idabel"
 @export var speed_stat: int = 8
@@ -11,65 +11,84 @@ extends CharacterBody2D
 @export var game_sense_stat: int = 5
 
 # --- LÓGICA DE PARTIDO ---
+var current_stamina_percentage: float = 100.0 # La barra siempre inicia al 100
 var active_route: Array = []
 var target_index: int = 0
 var is_running: bool = false
+var current_stamina: float = 0.0 # Estamina actual en tiempo real
 
 @onready var anim = $Visuals/AnimatedSprite2D
 
 func _ready():
-	# Aseguramos que el personaje sea clickeable para actualizar la UI
+	# Aseguramos que el personaje sea clickeable
 	input_pickable = true
-
-func _physics_process(_delta):
-	# Si no se ha dado la orden de correr o no hay ruta, no hace nada
-	if not is_running or active_route.is_empty():
-		return
-
-	# Obtenemos el punto actual de la ruta
-	var target_pos = active_route[target_index]
-	var direction = global_position.direction_to(target_pos)
+	# Inicializamos la estamina con el valor del stat
+	current_stamina = float(stamina_stat)
 	
-	# Usamos el atributo 'speed' multiplicado por un factor para el movimiento real
-	velocity = direction * (speed_stat * 25) 
-	move_and_slide()
-	
-	# Cambiamos la animación según el movimiento (puedes expandir esto después)
-	_update_animation_logic(direction)
-
-	# Si llegamos al punto actual, pasamos al siguiente
-	if global_position.distance_to(target_pos) < 10.0:
-		target_index += 1
-		# Si terminó la ruta, se detiene
-		if target_index >= active_route.size():
-			is_running = false
-			anim.stop()
-
-func _update_animation_logic(dir: Vector2):
-	# Lógica básica para elegir la animación de tu AnimatedSprite2D
-	if abs(dir.x) > abs(dir.y):
-		anim.play("idabel_running_90") # O la animación lateral
-	elif dir.y > 0:
-		anim.play("idabel_running_front")
+	# REPRODUCCIÓN DE IDLE AL INICIO
+	if anim.sprite_frames.has_animation("idabel_idle_back"):
+		anim.play("idabel_idle_back")
+		print("Animación iniciada: ", anim.animation) 
 	else:
 		anim.play("idabel_running_back")
+		anim.stop()
+	
+func _physics_process(delta):
+	if not is_running:
+		if anim.animation != "idabel_idle_back":
+			anim.play("idabel_idle_back")
+		return
 
-# --- CONEXIÓN CON LA UI ---
+	if active_route.is_empty(): return
+
+	# --- LÓGICA DE CONSUMO BASADA EN EL ATRIBUTO ---
+	if current_stamina_percentage > 0:
+		# se resta una base dividida por el stat del jugador
+		var consumption_rate = 10.0 / float(stamina_stat)
+		current_stamina_percentage -= delta * consumption_rate
+		_send_data_to_ui()
+	
+	# Movimiento y ruta 
+	var target_pos = active_route[target_index]
+	var direction = global_position.direction_to(target_pos)
+	velocity = direction * (speed_stat * 25)
+	move_and_slide()
+	_update_animation_logic(direction)
+
+	if global_position.distance_to(target_pos) < 10.0:
+		target_index += 1
+		# Si llegamos al final de la trayectoria
+		if target_index >= active_route.size():
+			is_running = false
+			active_route = [] # Limpiamos la ruta
+			anim.play("idabel_idle_back")
+
+func _update_animation_logic(dir: Vector2):
+	if dir.length() < 0.1: return
+	
+	if abs(dir.x) > abs(dir.y):
+		anim.play("idabel_running_90")
+		$Visuals.scale.x = -1 if dir.x < 0 else 1
+	elif dir.y > 0:
+		anim.play("idabel_running_front")
+		$Visuals.scale.x = 1
+	else:
+		anim.play("idabel_running_back")
+		$Visuals.scale.x = 1
+
 func _input_event(_viewport, event, _shape_idx):
-	# Cuando haces clic en el jugador durante el partido
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 		_send_data_to_ui()
 
 func _send_data_to_ui():
-	# Buscamos el nodo MatchUI en la escena principal para pasarle los datos
 	var match_ui = get_tree().current_scene.find_child("MatchUI", true, false)
-	if match_ui:
-		# Llamamos a la función que actualiza tu panel azul
+	if match_ui and match_ui.has_method("update_player_stats"):
 		match_ui.update_player_stats({
 			"name": player_name,
 			"speed": speed_stat,
 			"hands": hands_stat,
-			"stamina": stamina_stat,
+			"stamina_display": stamina_stat,        # El número fijo
+			"stamina_current": current_stamina_percentage, # La barra
 			"arm": arm_stat,
 			"agility": agility_stat,
 			"game_sense": game_sense_stat

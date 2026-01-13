@@ -48,11 +48,11 @@ signal content_changed # señal para avisar a la UI
 
 # Array con las texturas de los jugadores
 var player_textures = [
-	preload("res://assets/players/face_01.png"),
-	preload("res://assets/players/face_02.png"),
-	preload("res://assets/players/face_03.png"),
-	preload("res://assets/players/face_04.png"),
-	preload("res://assets/players/face_05.png"),
+	preload("res://assets/players_icons/face_01.png"),
+	preload("res://assets/players_icons/face_02.png"),
+	preload("res://assets/players_icons/face_03.png"),
+	preload("res://assets/players_icons/face_04.png"),
+	preload("res://assets/players_icons/face_05.png"),
 ]
 
 # ESTADO LOCAL
