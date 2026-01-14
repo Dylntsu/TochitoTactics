@@ -10,12 +10,14 @@ extends CharacterBody2D
 @export var agility_stat: int = 4
 @export var game_sense_stat: int = 5
 
+
 # --- LÓGICA DEL JUEGO ---
 var current_stamina_percentage: float = 100.0 # La barra siempre inicia al 100
 var active_route: Array = []
 var target_index: int = 0
 var is_running: bool = false
 var current_stamina: float = 0.0 # Estamina actual en tiempo real
+var player_id: int = 0
 
 const WORLD_SPEED_SCALE = 15.0
 
@@ -36,35 +38,50 @@ func _ready():
 		anim.stop()
 	
 func _physics_process(delta):
+	# 1. Si no está corriendo, mantenemos el idle y salimos
 	if not is_running:
 		if anim.animation != "idabel_idle_back":
 			anim.play("idabel_idle_back")
 		return
 
-	if active_route.is_empty(): return
+	# 2. Validación de seguridad para la ruta
+	if active_route.is_empty(): 
+		is_running = false
+		return
 
-	# --- LÓGICA DE CONSUMO BASADA EN EL ATRIBUTO ---
+	# 3. COMPROBACIÓN DE LÍMITES 
+	if target_index >= active_route.size():
+		is_running = false
+		active_route = [] 
+		anim.play("idabel_idle_back")
+		return
+
+	# --- LÓGICA DE CONSUMO DE ESTAMINA ---
 	if current_stamina_percentage > 0:
-		# se resta una base dividida por el stat del jugador
 		var consumption_rate = 10.0 / float(stamina_stat)
 		current_stamina_percentage -= delta * consumption_rate
 		_send_data_to_ui()
 	
-	# Movimiento y ruta 
+	# 4. MOVIMIENTO HACIA EL PUNTO ACTUAL
 	var target_pos = active_route[target_index]
 	var direction = global_position.direction_to(target_pos)
-	velocity = direction * (speed_stat * WORLD_SPEED_SCALE)
+	
+	# Ajuste de velocidad por estamina
+	var final_speed = (speed_stat * WORLD_SPEED_SCALE)
 	if current_stamina_percentage <= 0:
-		velocity *= 0.4 # Reduce velocidad si no hay estamina
+		final_speed *= 0.4 
+		
+	velocity = direction * final_speed
 	move_and_slide()
 	_update_animation_logic(direction)
 
+	# 5. LÓGICA DE CAMBIO DE PUNTO
 	if global_position.distance_to(target_pos) < 10.0:
 		target_index += 1
-		# Si llegamos al final de la trayectoria
+		# Verificación inmediata tras incrementar el índice
 		if target_index >= active_route.size():
 			is_running = false
-			active_route = [] # Limpiamos la ruta
+			active_route = [] 
 			anim.play("idabel_idle_back")
 
 func _update_animation_logic(dir: Vector2):

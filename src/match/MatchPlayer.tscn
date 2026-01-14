@@ -223,10 +223,10 @@ offset_bottom = 633.0
 
 [node name="LeftPrompts" type="VBoxContainer" parent="MatchUI/HUDMain/PromptsContainer"]
 layout_mode = 0
-offset_left = -26.0
-offset_top = -212.0
-offset_right = 44.0
-offset_bottom = -125.0
+offset_left = 677.0
+offset_top = -296.0
+offset_right = 747.0
+offset_bottom = -209.0
 scale = Vector2(1.1945791, 1.1945791)
 
 [node name="Prompt_Run" type="HBoxContainer" parent="MatchUI/HUDMain/PromptsContainer/LeftPrompts"]
@@ -257,9 +257,9 @@ text = "Move"
 
 [node name="RightPrompts" type="VBoxContainer" parent="MatchUI/HUDMain/PromptsContainer"]
 layout_mode = 0
-offset_left = 628.0
+offset_left = 677.0
 offset_top = -234.0
-offset_right = 772.0
+offset_right = 821.0
 offset_bottom = -157.0
 scale = Vector2(1.1700692, 1.1700692)
 
@@ -324,10 +324,10 @@ anchor_left = 0.5
 anchor_top = 1.0
 anchor_right = 0.5
 anchor_bottom = 1.0
-offset_left = -70.0
-offset_top = -41.0
-offset_right = 57.0
-offset_bottom = -2.0
+offset_left = -67.99994
+offset_top = -43.0
+offset_right = 59.00006
+offset_bottom = -4.0
 grow_horizontal = 2
 grow_vertical = 0
 scale = Vector2(6.033141, 20.705853)
@@ -336,17 +336,19 @@ texture = ExtResource("15_abdc4")
 
 [node name="PlaysHbox" type="HBoxContainer" parent="MatchUI/HUDMain/PlaysPanel"]
 layout_mode = 0
-offset_left = 7.980713
-offset_top = 10.521851
-offset_right = 1148.9807
-offset_bottom = 276.52185
-scale = Vector2(0.09496825, 0.030630354)
+offset_left = 7.6036158
+offset_top = 10.489211
+offset_right = 1148.6036
+offset_bottom = 276.4892
+scale = Vector2(0.09334408, 0.030106505)
 
 [node name="PlaySlot" type="VBoxContainer" parent="MatchUI/HUDMain/PlaysPanel/PlaysHbox"]
 layout_mode = 2
 
 [node name="PlayIcon" type="TextureRect" parent="MatchUI/HUDMain/PlaysPanel/PlaysHbox/PlaySlot"]
+unique_name_in_owner = true
 layout_mode = 2
+mouse_filter = 0
 texture = ExtResource("16_wujih")
 
 [node name="PlayLabel" type="Label" parent="MatchUI/HUDMain/PlaysPanel/PlaysHbox/PlaySlot"]
@@ -355,41 +357,49 @@ layout_mode = 2
 [node name="PlaySlot2" type="VBoxContainer" parent="MatchUI/HUDMain/PlaysPanel/PlaysHbox"]
 layout_mode = 2
 
-[node name="PlayIcon" type="TextureRect" parent="MatchUI/HUDMain/PlaysPanel/PlaysHbox/PlaySlot2"]
+[node name="PlayIcon2" type="TextureRect" parent="MatchUI/HUDMain/PlaysPanel/PlaysHbox/PlaySlot2"]
+unique_name_in_owner = true
 layout_mode = 2
+mouse_filter = 0
 texture = ExtResource("17_0ig72")
 
-[node name="PlayLabel" type="Label" parent="MatchUI/HUDMain/PlaysPanel/PlaysHbox/PlaySlot2"]
+[node name="PlayLabel2" type="Label" parent="MatchUI/HUDMain/PlaysPanel/PlaysHbox/PlaySlot2"]
 layout_mode = 2
 
 [node name="PlaySlot3" type="VBoxContainer" parent="MatchUI/HUDMain/PlaysPanel/PlaysHbox"]
 layout_mode = 2
 
-[node name="PlayIcon" type="TextureRect" parent="MatchUI/HUDMain/PlaysPanel/PlaysHbox/PlaySlot3"]
+[node name="PlayIcon3" type="TextureRect" parent="MatchUI/HUDMain/PlaysPanel/PlaysHbox/PlaySlot3"]
+unique_name_in_owner = true
 layout_mode = 2
+mouse_filter = 0
 texture = ExtResource("18_7wety")
 
-[node name="PlayLabel" type="Label" parent="MatchUI/HUDMain/PlaysPanel/PlaysHbox/PlaySlot3"]
+[node name="PlayLabel3" type="Label" parent="MatchUI/HUDMain/PlaysPanel/PlaysHbox/PlaySlot3"]
 layout_mode = 2
 
 [node name="PlaySlot4" type="VBoxContainer" parent="MatchUI/HUDMain/PlaysPanel/PlaysHbox"]
 layout_mode = 2
 
-[node name="PlayIcon" type="TextureRect" parent="MatchUI/HUDMain/PlaysPanel/PlaysHbox/PlaySlot4"]
+[node name="PlayIcon4" type="TextureRect" parent="MatchUI/HUDMain/PlaysPanel/PlaysHbox/PlaySlot4"]
+unique_name_in_owner = true
 layout_mode = 2
+mouse_filter = 0
 texture = ExtResource("19_cufyd")
 
-[node name="PlayLabel" type="Label" parent="MatchUI/HUDMain/PlaysPanel/PlaysHbox/PlaySlot4"]
+[node name="PlayLabel4" type="Label" parent="MatchUI/HUDMain/PlaysPanel/PlaysHbox/PlaySlot4"]
 layout_mode = 2
 
 [node name="PlaySlot5" type="VBoxContainer" parent="MatchUI/HUDMain/PlaysPanel/PlaysHbox"]
 layout_mode = 2
 
-[node name="PlayIcon" type="TextureRect" parent="MatchUI/HUDMain/PlaysPanel/PlaysHbox/PlaySlot5"]
+[node name="PlayIcon5" type="TextureRect" parent="MatchUI/HUDMain/PlaysPanel/PlaysHbox/PlaySlot5"]
+unique_name_in_owner = true
 layout_mode = 2
+mouse_filter = 0
 texture = ExtResource("20_se5ie")
 
-[node name="PlayLabel" type="Label" parent="MatchUI/HUDMain/PlaysPanel/PlaysHbox/PlaySlot5"]
+[node name="PlayLabel5" type="Label" parent="MatchUI/HUDMain/PlaysPanel/PlaysHbox/PlaySlot5"]
 layout_mode = 2
 
 [node name="SelectPrompt" type="HBoxContainer" parent="MatchUI/HUDMain/PlaysPanel"]
