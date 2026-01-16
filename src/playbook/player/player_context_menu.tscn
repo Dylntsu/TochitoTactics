@@ -1,0 +1,73 @@
+[gd_scene load_steps=4 format=3 uid="uid://bf1khj84lp83c"]
+
+[ext_resource type="Texture2D" uid="uid://dgbipya6wg1ct" path="res://assets/sprites/Player Manage.png" id="1_eu7yq"]
+[ext_resource type="Texture2D" uid="uid://ckrpuaq8gq675" path="res://assets/players_icons/face_02.png" id="2_e3onk"]
+[ext_resource type="Texture2D" uid="uid://bxqocim063x7x" path="res://assets/sprites/Icons/gloves_icon.png" id="3_jjs5k"]
+
+[node name="PlayerContextMenu" type="Control"]
+layout_mode = 3
+anchors_preset = 0
+scale = Vector2(1.3867135, 1.3867135)
+
+[node name="CanvasLayer" type="CanvasLayer" parent="."]
+
+[node name="Background" type="NinePatchRect" parent="CanvasLayer"]
+offset_right = 40.0
+offset_bottom = 40.0
+scale = Vector2(9.821778, 8.823807)
+texture = ExtResource("1_eu7yq")
+
+[node name="LeftColumn" type="VBoxContainer" parent="CanvasLayer/Background"]
+layout_mode = 0
+offset_left = 4.1537337
+offset_top = 5.989561
+offset_right = 4.1537337
+offset_bottom = 63.989563
+scale = Vector2(0.10822533, 0.10822533)
+
+[node name="Header" type="Label" parent="CanvasLayer/Background"]
+layout_mode = 0
+offset_left = 5.8737183
+offset_top = 5.3938794
+offset_right = 87.87372
+offset_bottom = 28.393879
+scale = Vector2(0.10822533, 0.10822533)
+text = "--- Manage"
+
+[node name="Portrait" type="TextureRect" parent="CanvasLayer/Background"]
+layout_mode = 0
+offset_left = 7.342149
+offset_top = 8.009092
+offset_right = 49.342148
+offset_bottom = 66.00909
+scale = Vector2(0.14487903, 0.14487903)
+texture = ExtResource("2_e3onk")
+stretch_mode = 6
+
+[node name="PosLabel" type="Label" parent="CanvasLayer/Background"]
+texture_filter = 1
+layout_mode = 0
+offset_left = 2.7165947
+offset_top = 15.527832
+offset_right = 156.7166
+offset_bottom = 38.527832
+scale = Vector2(0.10822533, 0.10822533)
+text = "Designated Position"
+
+[node name="PosButton" type="TextureButton" parent="CanvasLayer/Background"]
+layout_mode = 0
+offset_left = 5.5800476
+offset_top = 18.46997
+offset_right = 805.5801
+offset_bottom = 818.47
+scale = Vector2(0.013359777, 0.013359777)
+texture_normal = ExtResource("3_jjs5k")
+
+[node name="StatsGrid" type="GridContainer" parent="CanvasLayer/Background"]
+layout_mode = 0
+offset_left = 20.92512
+offset_top = 7.2735643
+offset_right = 20.92512
+offset_bottom = 65.27357
+scale = Vector2(0.32338363, 0.126392)
+columns = 2

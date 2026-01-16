@@ -12,6 +12,7 @@ signal interaction_ended
 # ==============================================================================
 @export var player_id: int = 0
 @onready var sprite = $Sprite2D 
+@onready var hover_timer = $HoverTimer
 @onready var label = $Label 
 ## Tamaño objetivo en píxeles que queremos que ocupen las cabezas
 @export var target_head_size: float = 80.0
@@ -39,6 +40,9 @@ var role: String = "WR"
 # CICLO DE VIDA (ESTILO Y MOVIMIENTO MANUAL)
 # ==============================================================================
 func _ready():
+	mouse_entered.connect(_on_mouse_entered)
+	mouse_exited.connect(_on_mouse_exited)
+	hover_timer.timeout.connect(_on_hover_timeout)
 	if visual_panel:
 		visual_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		
@@ -220,3 +224,18 @@ func set_selected(value: bool):
 	var mat = $Sprite2D.material as ShaderMaterial
 	if mat:
 		mat.set_shader_parameter("is_selected", value)
+
+#Hovers
+func _on_mouse_entered():
+	hover_timer.start()
+
+func _on_mouse_exited():
+	hover_timer.stop()
+	# Avisamos al editor que oculte el menú si el mouse sale
+	get_parent().get_parent().context_menu.hide()
+
+func _on_hover_timeout():
+	# Solo si no estamos dibujando una ruta, mostramos el menú
+	var editor = get_parent().get_parent()
+	if not editor.route_manager.is_editing:
+		editor.show_context_menu(self)

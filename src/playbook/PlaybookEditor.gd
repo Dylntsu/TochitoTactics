@@ -7,7 +7,7 @@ extends Node2D
 @onready var nodes_container = $NodesContainer
 @onready var background = $CanvasLayer/Background 
 @onready var capture_frame = $CaptureFrame
-
+@onready var context_menu = %PlayerContextMenu
 signal content_changed # señal para avisar a la UI
 
 # ==============================================================================
@@ -75,10 +75,15 @@ func get_selected_player_id() -> int:
 
 func _ready():
 	get_viewport().size_changed.connect(_on_viewport_resized)
-	
+	context_menu.role_changed.connect(_on_menu_role_changed)
 	# Esperamos dos frames para asegurar que el Layout de Godot se asentó
 	await get_tree().process_frame
-	await get_tree().process_frame
+	
+	if context_menu:
+		context_menu.hide()
+		# Conectamos la señal que creamos para el botón cíclico
+		if not context_menu.role_changed.is_connected(_on_menu_role_changed):
+			context_menu.role_changed.connect(_on_menu_role_changed)
 	
 	if route_manager:
 		var field = get_node_or_null("CanvasLayer/Background")
@@ -100,6 +105,14 @@ func _ready():
 		route_manager.route_modified.connect(_on_child_action_finished)
 	
 	rebuild_editor()
+func _on_menu_role_changed(new_role: String):
+	# Verificamos que haya un jugador seleccionado antes de moverlo
+	if selected_player_id != -1:
+		# Llamamos a tu lógica de yardas para posicionar según el rol
+		assign_role_to_player(selected_player_id, new_role)
+		
+		# Feedback visual para el usuario
+		_show_toast_in_editor("Posición actualizada: " + new_role)
 
 func _on_viewport_resized():
 	rebuild_editor()
@@ -218,19 +231,7 @@ func render_formation():
 		
 		# Agregamos al contenedor
 		nodes_container.add_child(player)
-	
-	if has_method("draw_snap_line"):
-		draw_snap_line()
-
-func draw_snap_line():
-	if center_player_id != -1 and qb_player_id != -1:
-		var center_node = _get_player_by_id(center_player_id)
-		var qb_node = _get_player_by_id(qb_player_id)
 		
-		if center_node and qb_node:
-			# Usamos el route_manager para dibujar una ruta fija naranja
-			var points = PackedVector2Array([center_node.position, qb_node.position])
-			route_manager.create_fixed_route(center_player_id, points, Color.ORANGE)
 
 func _get_player_by_id(id: int):
 	for child in nodes_container.get_children():
@@ -499,8 +500,6 @@ func assign_role_to_player(p_id: int, new_role: String):
 				
 				# Guardamos para que el autoguardado lo procese
 				_active_play_positions[child.player_id] = child.position
-	
-	draw_snap_line()
 	content_changed.emit()
 	
 func _auto_position_special_roles():
@@ -529,20 +528,37 @@ func _show_toast_in_editor(message: String):
 		content_changed.emit()
 
 func _on_player_input_event(_viewport, event, _shape_idx, player_node):
-	# Cambiamos MOUSE_BUTTON_LEFT por MOUSE_BUTTON_RIGHT
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_RIGHT:
 		deselect_all_players()
-		
-		#Registramos el nuevo ID seleccionado
 		selected_player_id = player_node.player_id
-		
-		# se activa el shader solo en este jugador
 		player_node.set_selected(true)
 		
-		_show_toast_in_editor("Jugador " + str(selected_player_id) + " seleccionado para roles")
+		# === LÓGICA DE MENÚ ===
+		if context_menu:
+			# Posicionar el menú cerca del ratón
+			var mouse_pos = get_global_mouse_position()
+			context_menu.global_position = mouse_pos + Vector2(15, 15)
+			
+			# Pasar los stats reales del jugador al menú
+			# Asumiendo que tu objeto Player tiene un diccionario 'stats'
+			var player_stats = {
+				"speed": player_node.speed_stat,
+				"stamina": player_node.stamina_stat,
+				"strength": 75 # Ejemplo
+			}
+			context_menu.setup(player_node.player_id, player_stats)
+			context_menu.show()
 
 func deselect_all_players():
 	for child in nodes_container.get_children():
 		if child.has_method("set_selected"):
 			child.set_selected(false)
 	selected_player_id = -1
+
+func show_context_menu(player_node):
+	selected_player_id = player_node.player_id
+	
+	# Posicionar el menú "Idabel Manage" justo al lado del jugador
+	context_menu.global_position = player_node.global_position + Vector2(60, -100)
+	context_menu.setup(player_node)
+	context_menu.show()
