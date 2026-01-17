@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="PlayerStats" load_steps=3 format=3 uid="uid://ck3ang0c6288q"]
+
+[ext_resource type="Texture2D" uid="uid://dvwyo2f5k0k2d" path="res://assets/players_icons/face_03.png" id="1_jk57q"]
+[ext_resource type="Script" uid="uid://c0pblvp8ja0ar" path="res://src/playbook/player/PlayerStats.gd" id="2_3mw0v"]
+
+[resource]
+script = ExtResource("2_3mw0v")
+full_name = "Goyis (Chilaquil King)"
+portrait = ExtResource("1_jk57q")
+stamina = 28.0
+speed = 32.0
+hands = 38.0
+arm = 42.0
+game_sense = 44.0
+agility = 40.0
+metadata/_custom_type_script = "uid://c0pblvp8ja0ar"

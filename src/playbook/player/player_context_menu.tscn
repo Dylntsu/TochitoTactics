@@ -1,73 +1,151 @@
-[gd_scene load_steps=4 format=3 uid="uid://bf1khj84lp83c"]
+[gd_scene load_steps=6 format=3 uid="uid://bf1khj84lp83c"]
 
 [ext_resource type="Texture2D" uid="uid://dgbipya6wg1ct" path="res://assets/sprites/Player Manage.png" id="1_eu7yq"]
 [ext_resource type="Texture2D" uid="uid://ckrpuaq8gq675" path="res://assets/players_icons/face_02.png" id="2_e3onk"]
 [ext_resource type="Texture2D" uid="uid://bxqocim063x7x" path="res://assets/sprites/Icons/gloves_icon.png" id="3_jjs5k"]
 
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_eu7yq"]
+bg_color = Color(0.006264085, 0.1485506, 0.27336472, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_e3onk"]
+bg_color = Color(0, 0.95686275, 0.23921569, 1)
+
 [node name="PlayerContextMenu" type="Control"]
 layout_mode = 3
 anchors_preset = 0
-scale = Vector2(1.3867135, 1.3867135)
+offset_left = 15.0
+offset_top = -2.0
+offset_right = 15.0
+offset_bottom = -2.0
+scale = Vector2(9.824954, 0.3782607)
 
-[node name="CanvasLayer" type="CanvasLayer" parent="."]
-
-[node name="Background" type="NinePatchRect" parent="CanvasLayer"]
+[node name="Background" type="NinePatchRect" parent="."]
+unique_name_in_owner = true
+layout_mode = 0
 offset_right = 40.0
 offset_bottom = 40.0
-scale = Vector2(9.821778, 8.823807)
+scale = Vector2(2.3783016, 47.72941)
+mouse_filter = 1
 texture = ExtResource("1_eu7yq")
 
-[node name="LeftColumn" type="VBoxContainer" parent="CanvasLayer/Background"]
+[node name="LeftColumn" type="VBoxContainer" parent="Background"]
+unique_name_in_owner = true
 layout_mode = 0
-offset_left = 4.1537337
-offset_top = 5.989561
-offset_right = 4.1537337
-offset_bottom = 63.989563
+offset_left = 23.268234
+offset_top = 7.1565433
+offset_right = 27.268234
+offset_bottom = 189.15654
 scale = Vector2(0.10822533, 0.10822533)
 
-[node name="Header" type="Label" parent="CanvasLayer/Background"]
+[node name="StaminaBar" type="ProgressBar" parent="Background/LeftColumn"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(120, 0)
+layout_mode = 2
+size_flags_horizontal = 13
+size_flags_vertical = 3
+theme_override_styles/background = SubResource("StyleBoxFlat_eu7yq")
+theme_override_styles/fill = SubResource("StyleBoxFlat_e3onk")
+show_percentage = false
+
+[node name="VelocityBar" type="ProgressBar" parent="Background/LeftColumn"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(120, 0)
+layout_mode = 2
+size_flags_horizontal = 13
+size_flags_vertical = 3
+theme_override_styles/background = SubResource("StyleBoxFlat_eu7yq")
+theme_override_styles/fill = SubResource("StyleBoxFlat_e3onk")
+show_percentage = false
+
+[node name="HandsBar" type="ProgressBar" parent="Background/LeftColumn"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(120, 0)
+layout_mode = 2
+size_flags_horizontal = 13
+size_flags_vertical = 3
+theme_override_styles/background = SubResource("StyleBoxFlat_eu7yq")
+theme_override_styles/fill = SubResource("StyleBoxFlat_e3onk")
+show_percentage = false
+
+[node name="ArmBar" type="ProgressBar" parent="Background/LeftColumn"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(120, 0)
+layout_mode = 2
+size_flags_horizontal = 13
+size_flags_vertical = 3
+theme_override_styles/background = SubResource("StyleBoxFlat_eu7yq")
+theme_override_styles/fill = SubResource("StyleBoxFlat_e3onk")
+show_percentage = false
+
+[node name="SenseBar" type="ProgressBar" parent="Background/LeftColumn"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(120, 0)
+layout_mode = 2
+size_flags_horizontal = 13
+size_flags_vertical = 3
+theme_override_styles/background = SubResource("StyleBoxFlat_eu7yq")
+theme_override_styles/fill = SubResource("StyleBoxFlat_e3onk")
+show_percentage = false
+
+[node name="AgilityBar" type="ProgressBar" parent="Background/LeftColumn"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(120, 0)
+layout_mode = 2
+size_flags_horizontal = 13
+size_flags_vertical = 3
+theme_override_styles/background = SubResource("StyleBoxFlat_eu7yq")
+theme_override_styles/fill = SubResource("StyleBoxFlat_e3onk")
+show_percentage = false
+
+[node name="Header" type="Label" parent="Background"]
+unique_name_in_owner = true
 layout_mode = 0
-offset_left = 5.8737183
-offset_top = 5.3938794
-offset_right = 87.87372
-offset_bottom = 28.393879
+offset_left = 4.2862544
+offset_top = 5.7933927
+offset_right = 86.286255
+offset_bottom = 28.793392
 scale = Vector2(0.10822533, 0.10822533)
 text = "--- Manage"
 
-[node name="Portrait" type="TextureRect" parent="CanvasLayer/Background"]
+[node name="Portrait" type="TextureRect" parent="Background"]
+unique_name_in_owner = true
 layout_mode = 0
-offset_left = 7.342149
-offset_top = 8.009092
+offset_left = 7.342148
+offset_top = 7.7832317
 offset_right = 49.342148
-offset_bottom = 66.00909
+offset_bottom = 65.78323
 scale = Vector2(0.14487903, 0.14487903)
 texture = ExtResource("2_e3onk")
 stretch_mode = 6
 
-[node name="PosLabel" type="Label" parent="CanvasLayer/Background"]
+[node name="RoleLabel" type="Label" parent="Background"]
+unique_name_in_owner = true
 texture_filter = 1
 layout_mode = 0
-offset_left = 2.7165947
-offset_top = 15.527832
-offset_right = 156.7166
-offset_bottom = 38.527832
+offset_left = 2.4104328
+offset_top = 15.755264
+offset_right = 156.41043
+offset_bottom = 38.755264
 scale = Vector2(0.10822533, 0.10822533)
 text = "Designated Position"
+horizontal_alignment = 1
 
-[node name="PosButton" type="TextureButton" parent="CanvasLayer/Background"]
+[node name="PosButton" type="TextureButton" parent="Background"]
+unique_name_in_owner = true
 layout_mode = 0
-offset_left = 5.5800476
-offset_top = 18.46997
-offset_right = 805.5801
-offset_bottom = 818.47
+offset_left = 5.294342
+offset_top = 17.679443
+offset_right = 805.2943
+offset_bottom = 817.67944
 scale = Vector2(0.013359777, 0.013359777)
 texture_normal = ExtResource("3_jjs5k")
 
-[node name="StatsGrid" type="GridContainer" parent="CanvasLayer/Background"]
+[node name="StatsGrid" type="GridContainer" parent="Background"]
+unique_name_in_owner = true
 layout_mode = 0
 offset_left = 20.92512
-offset_top = 7.2735643
-offset_right = 20.92512
-offset_bottom = 65.27357
+offset_top = 5.4526043
+offset_right = 67.93392
+offset_bottom = 167.2292
 scale = Vector2(0.32338363, 0.126392)
 columns = 2

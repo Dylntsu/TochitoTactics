@@ -1,9 +1,11 @@
-[gd_scene load_steps=6 format=3 uid="uid://uby6wv405ia6"]
+[gd_scene load_steps=8 format=3 uid="uid://uby6wv405ia6"]
 
 [ext_resource type="Script" uid="uid://cgiy3uu4qb8w8" path="res://src/playbook/PlaybookEditor.gd" id="1_ybrfa"]
 [ext_resource type="Texture2D" uid="uid://dl8pi2jccrcsr" path="res://assets/sprites/tocho_tactics_background.png" id="2_4aaqw"]
 [ext_resource type="Script" uid="uid://v5bcnk3p7uvc" path="res://src/playbook/components/RouteManager.gd" id="3_sigk0"]
 [ext_resource type="Script" uid="uid://b8arbw6hrqmw7" path="res://src/playbook/PlaybookUI.gd" id="4_mdejl"]
+[ext_resource type="PackedScene" uid="uid://bf1khj84lp83c" path="res://src/playbook/player/player_context_menu.tscn" id="5_unia6"]
+[ext_resource type="Script" uid="uid://bc54gkxxvck7j" path="res://src/playbook/player/PlayerContextMenu.gd" id="6_mkvnw"]
 
 [sub_resource type="LabelSettings" id="LabelSettings_sigk0"]
 font_size = 46
@@ -11,14 +13,6 @@ shadow_size = 10
 
 [node name="PlaybookEditor" type="Node2D"]
 script = ExtResource("1_ybrfa")
-formation_y_offset = 2.301
-qb_depth_offset = 0.989
-spawn_vertical_offset = 0.665
-grid_margin_bottom = 0.014
-grid_margin_left = 0.412
-grid_margin_right = 0.411
-formation_margin_left = 0.389
-formation_margin_right = 0.409
 metadata/_edit_lock_ = true
 
 [node name="Background2" type="TextureRect" parent="."]
@@ -57,6 +51,7 @@ grow_vertical = 2
 scale = Vector2(1.6729074, 1.9270275)
 size_flags_horizontal = 8
 size_flags_vertical = 8
+mouse_filter = 2
 texture = ExtResource("2_4aaqw")
 expand_mode = 1
 stretch_mode = 5
@@ -105,36 +100,85 @@ theme_override_constants/margin_left = 20
 theme_override_constants/margin_top = 20
 theme_override_constants/margin_right = 20
 theme_override_constants/margin_bottom = 20
-metadata/_edit_lock_ = true
 
 [node name="HBoxContainer" type="HBoxContainer" parent="UI_Layer/MainLayout"]
 layout_mode = 2
 mouse_filter = 2
-metadata/_edit_lock_ = true
 
 [node name="LeftPanel" type="VBoxContainer" parent="UI_Layer/MainLayout/HBoxContainer"]
+custom_minimum_size = Vector2(370.645, 0)
+layout_direction = 2
 layout_mode = 2
 size_flags_horizontal = 0
 mouse_filter = 2
 
 [node name="Label" type="Label" parent="UI_Layer/MainLayout/HBoxContainer/LeftPanel"]
+unique_name_in_owner = true
 layout_mode = 2
 text = "Jugadas"
 label_settings = SubResource("LabelSettings_sigk0")
 horizontal_alignment = 1
 
-[node name="ScrollContainer" type="ScrollContainer" parent="UI_Layer/MainLayout/HBoxContainer/LeftPanel"]
-layout_mode = 2
-size_flags_vertical = 3
-horizontal_scroll_mode = 0
-
-[node name="PlaysGrid" type="GridContainer" parent="UI_Layer/MainLayout/HBoxContainer/LeftPanel/ScrollContainer"]
+[node name="PlaysGrid" type="GridContainer" parent="UI_Layer/MainLayout/HBoxContainer/LeftPanel"]
 unique_name_in_owner = true
+visible = false
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_constants/h_separation = 7
 theme_override_constants/v_separation = 7
 columns = 2
+
+[node name="HBoxContainer" type="HBoxContainer" parent="UI_Layer/MainLayout/HBoxContainer/LeftPanel"]
+unique_name_in_owner = true
+layout_mode = 2
+alignment = 1
+
+[node name="BtnPrev" type="Button" parent="UI_Layer/MainLayout/HBoxContainer/LeftPanel/HBoxContainer"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(50, 20)
+layout_mode = 2
+text = "<"
+
+[node name="PlayDisplay" type="VBoxContainer" parent="UI_Layer/MainLayout/HBoxContainer/LeftPanel/HBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="PreviewRect" type="TextureRect" parent="UI_Layer/MainLayout/HBoxContainer/LeftPanel/HBoxContainer/PlayDisplay"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(220, 220)
+layout_mode = 2
+expand_mode = 1
+stretch_mode = 5
+
+[node name="PlayNameLabel" type="Label" parent="UI_Layer/MainLayout/HBoxContainer/LeftPanel/HBoxContainer/PlayDisplay/PreviewRect"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 34.7286
+offset_top = 223.03864
+offset_right = 196.7286
+offset_bottom = 246.03864
+text = "Nombre de la Jugada"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="BtnNext" type="Button" parent="UI_Layer/MainLayout/HBoxContainer/LeftPanel/HBoxContainer"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(50, 0)
+layout_mode = 2
+text = ">"
+
+[node name="StatsPanel" parent="UI_Layer/MainLayout/HBoxContainer/LeftPanel" instance=ExtResource("5_unia6")]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 1
+script = ExtResource("6_mkvnw")
+
+[node name="Background" parent="UI_Layer/MainLayout/HBoxContainer/LeftPanel/StatsPanel" index="0"]
+offset_left = -24.989561
+offset_top = 7.9680157
+offset_right = 15.010439
+offset_bottom = 47.968018
+scale = Vector2(9.893014, 10.290621)
 
 [node name="Spacer" type="Control" parent="UI_Layer/MainLayout/HBoxContainer"]
 layout_mode = 2
@@ -183,11 +227,13 @@ text = "Probar Jugada"
 
 [node name="BtnSetQB" type="Button" parent="UI_Layer/MainLayout/HBoxContainer/RightPanel"]
 unique_name_in_owner = true
+visible = false
 layout_mode = 2
 text = "Designar a QuarterBack"
 
 [node name="BtnSetCenter" type="Button" parent="UI_Layer/MainLayout/HBoxContainer/RightPanel"]
 unique_name_in_owner = true
+visible = false
 layout_mode = 2
 text = "Desingar a Centro
 "
@@ -237,3 +283,5 @@ offset_right = 447.20374
 offset_bottom = 46.860577
 scale = Vector2(10.789793, 16.779829)
 mouse_filter = 2
+
+[editable path="UI_Layer/MainLayout/HBoxContainer/LeftPanel/StatsPanel"]

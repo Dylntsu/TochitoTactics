@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="PlayerStats" load_steps=3 format=3 uid="uid://b2o5mi6rdkuqf"]
+
+[ext_resource type="Texture2D" uid="uid://befojxnip24dj" path="res://assets/players_icons/face_04.png" id="1_v76x2"]
+[ext_resource type="Script" uid="uid://c0pblvp8ja0ar" path="res://src/playbook/player/PlayerStats.gd" id="1_yrhxi"]
+
+[resource]
+script = ExtResource("1_yrhxi")
+full_name = "HeadHunter"
+portrait = ExtResource("1_v76x2")
+stamina = 100.0
+speed = 100.0
+hands = 100.0
+arm = 100.0
+game_sense = 100.0
+agility = 100.0
+default_role = "Center"
+metadata/_custom_type_script = "uid://c0pblvp8ja0ar"

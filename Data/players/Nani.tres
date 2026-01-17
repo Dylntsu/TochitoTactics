@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="PlayerStats" load_steps=3 format=3 uid="uid://bo6ljgw1kwufk"]
+
+[ext_resource type="Texture2D" uid="uid://ccghq7pe7a8n8" path="res://assets/players_icons/face_01.png" id="1_cgbt6"]
+[ext_resource type="Script" uid="uid://c0pblvp8ja0ar" path="res://src/playbook/player/PlayerStats.gd" id="2_t7ghv"]
+
+[resource]
+script = ExtResource("2_t7ghv")
+full_name = "Nani"
+portrait = ExtResource("1_cgbt6")
+stamina = 18.0
+speed = 20.0
+hands = 32.0
+arm = 46.0
+game_sense = 26.0
+agility = 18.0
+default_role = "QB"
+metadata/_custom_type_script = "uid://c0pblvp8ja0ar"
