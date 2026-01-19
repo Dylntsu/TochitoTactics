@@ -209,8 +209,6 @@ func render_formation():
 	# 1. Definir el "Lienzo"
 	var frame_rect = capture_frame.get_global_rect()
 	var center_x = frame_rect.get_center().x
-	
-	# Margen de seguridad
 	var available_width = frame_rect.size.x * 0.90 
 	
 	# 2. Lógica de Espaciado Adaptativo
@@ -222,14 +220,26 @@ func render_formation():
 		if total_ideal_width > available_width:
 			final_separation = available_width / (player_count - 1)
 	
-	# Recalculamos el inicio
 	var total_formation_width = (player_count - 1) * final_separation
 	var start_x = center_x - (total_formation_width / 2.0)
 	
-	# Todos usarán esta misma altura base.
+	# 3. Definir Altura Base (Punto de Instanciación)
 	var desired_y = frame_rect.end.y - (spacing * 1.5)
 	var clamped_y = clamp(desired_y, frame_rect.position.y, frame_rect.end.y - (spacing * 0.5))
-		
+	
+	# --- AJUSTE DE LÍMITE EXACTO ---
+	# Antes restábamos (subíamos la línea). Ahora la dejamos EXACTA en clamped_y.
+	# Esto significa que el jugador nace tocando el techo invisible.
+	var scrimmage_line_y = clamped_y 
+	
+	# Definimos el rectángulo de restricción
+	var scrimmage_limit_rect = Rect2(
+		frame_rect.position.x, 
+		scrimmage_line_y, 
+		frame_rect.size.x, 
+		frame_rect.end.y - scrimmage_line_y
+	)
+	
 	for i in range(player_count):
 		var player = player_scene.instantiate()
 		player.player_id = i
@@ -239,9 +249,7 @@ func render_formation():
 		
 		# --- POSICIONAMIENTO ---
 		var pos_x = start_x + (i * final_separation)
-		# CAMBIO PRINCIPAL: Todos usan exactamente la misma Y
 		var pos_y = clamped_y 
-
 		
 		# Prioridad a la persistencia
 		if _active_play_positions.has(i):
@@ -253,8 +261,8 @@ func render_formation():
 		else:
 			player.position = Vector2(pos_x, pos_y)
 		
-		# --- LÍMITES FÍSICOS ---
-		player.limit_rect = frame_rect 
+		# --- APLICACIÓN DEL LÍMITE ---
+		player.limit_rect = scrimmage_limit_rect 
 		player.save_starting_position()
 		
 		if player.data and player.data.portrait:
@@ -269,7 +277,7 @@ func render_formation():
 			player.interaction_ended.connect(_on_child_action_finished)
 		
 		nodes_container.add_child(player)
-		
+
 func _get_player_by_id(id: int):
 	for child in nodes_container.get_children():
 		if "player_id" in child and child.player_id == id:
@@ -338,16 +346,35 @@ func _on_player_start_route_requested(player_node):
 	
 	route_manager.try_start_route(pid, player_node.get_route_anchor())
 
+# Calcula la posición ideal en el Grid para un rol específico
+func _get_role_target_position(role_name: String) -> Vector2:
+	if grid_points.is_empty(): return Vector2.ZERO
+	
+	var bounds = calculate_grid_bounds()
+	var center_x = bounds.get_center().x
+	
+	var base_limit_index = int(grid_size.y - offensive_limit_row_offset)
+	var scrimmage_y = grid_points[clamp(base_limit_index, 0, grid_points.size()-1)].y
+	
+	match role_name:
+		"CENTER":
+			return Vector2(center_x, scrimmage_y + (spacing * 0.2))
+		"QB":
+			return Vector2(center_x, scrimmage_y + (spacing * qb_depth_offset))
+		_:
+			return Vector2.ZERO # Retorno por defecto si no es un rol especial
+
 func _on_player_moved(player_node):
+	# 1. Actualizar memoria de posiciones
 	var pos_data = {
 		"position": player_node.position,
 		"resource_path": player_node.data.resource_path if player_node.data else ""
 	}
 	_active_play_positions[player_node.player_id] = pos_data
 	
+	# 2. Actualizar visualmente la línea de la ruta
 	if route_manager:
 		route_manager.update_route_origin(player_node.player_id, player_node.get_route_anchor())
-	
 func stop_all_animations():
 	for child in nodes_container.get_children():
 		if child is Area2D and child.has_method("stop_animation"):
@@ -414,45 +441,44 @@ func get_play_preview_texture() -> ImageTexture:
 func load_play_data(play_data) -> void:
 	print("--- INICIANDO CARGA DE JUGADA ---")
 	
-	if has_method("reset_current_play"):
-		stop_all_animations()
+	# Aseguramos limpieza inicial
+	unlock_editor_for_editing() 
+	stop_all_animations()
+	if route_manager:
 		route_manager.clear_all_routes()
 	
 	var positions_data = {}
 	var routes_data = {}
 	
 	if play_data is Resource:
-		if "formations" in play_data:
-			positions_data = play_data.formations
-		if "routes" in play_data:
-			routes_data = play_data.routes
-			
+		if "formations" in play_data: positions_data = play_data.formations
+		if "routes" in play_data: routes_data = play_data.routes
 	elif play_data is Dictionary:
 		positions_data = play_data.get("formations", {})
 		routes_data = play_data.get("routes", {})
 	
 	_active_play_positions = positions_data.duplicate()
 	
+	# Reconstruimos los jugadores visualmente
 	rebuild_editor()
 	
+	# --- RECONEXIÓN CRÍTICA ---
+	# Cargamos las rutas en el Manager
+	if route_manager:
+		route_manager.load_routes_from_data(routes_data)
+	
+	# Asignamos las rutas a los jugadores y actualizamos el origen visual
 	for child in nodes_container.get_children():
 		if child is Area2D and "player_id" in child:
 			var p_id = child.player_id
-			if _active_play_positions.has(p_id):
-				child.save_starting_position()
+			
+			# Si este jugador tiene ruta guardada...
+			if routes_data.has(p_id):
+				child.current_route = routes_data[p_id]
+				# ... FORZAMOS al RouteManager a saber que este jugador es el dueño de esa línea
+				# Esto conecta el movimiento del jugador con el inicio de la línea
 				if route_manager:
 					route_manager.update_route_origin(p_id, child.get_route_anchor(), true)
-
-	if route_manager:
-		route_manager.load_routes_from_data(routes_data)
-		
-	for player in nodes_container.get_children():
-		if player is Area2D:
-			var p_id = player.player_id
-			var saved_route = routes_data.get(p_id, PackedVector2Array())
-			if "current_route" in player:
-				player.current_route = saved_route
-
 func play_current_play():
 	var all_routes = route_manager.get_all_routes() 
 	
@@ -515,34 +541,73 @@ func get_current_state_as_data() -> PlayData:
 func _on_child_action_finished(_node = null):
 	content_changed.emit()
 	
-func assign_role_to_player(p_id: int, new_role: String):
+func assign_role_to_player(source_pid: int, new_role: String):
 	if grid_points.is_empty(): return
 	
-	var bounds = calculate_grid_bounds()
-	var center_x = bounds.get_center().x
-	var base_limit_index = int(grid_size.y - offensive_limit_row_offset)
-	var center_row_index = base_limit_index + 1
-	var qb_row_index = base_limit_index + 2
+	# 1. Identificar nodos y estado actual
+	var source_player = _get_player_by_id(source_pid)
+	if not source_player: return
 	
-	var center_y = grid_points[center_row_index].y
-	var qb_y = grid_points[qb_row_index].y
+	# Guardamos la posición original del jugador que estamos moviendo
+	# para mandarle ahí al jugador que sea desalojado (Swap)
+	var source_original_pos = source_player.position
 	
-	for child in nodes_container.get_children():
-		if child is Area2D and "player_id" in child:
-			if child.player_id == p_id:
-				if new_role == "CENTER":
-					child.position = Vector2(center_x, center_y)
-					center_player_id = p_id
-				elif new_role == "QB":
-					child.position = Vector2(center_x, qb_y)
-					qb_player_id = p_id
-				
-				var pos_data = {
-					"position": child.position,
-					"resource_path": child.data.resource_path if child.data else ""
-				}
-				_active_play_positions[child.player_id] = pos_data
+	# 2. Calcular dónde debe ir el nuevo rol
+	var target_pos = _get_role_target_position(new_role)
+	if target_pos == Vector2.ZERO: return # Si el rol no tiene posición fija, no hacemos nada automático
+	
+	var incumbent_pid = -1
+	
+	# Aquí definimos quién es el dueño actual del puesto
+	match new_role:
+		"CENTER": incumbent_pid = center_player_id
+		"QB": incumbent_pid = qb_player_id
+	
+	# A. Movemos al jugador seleccionado a su nuevo puesto
+	source_player.position = target_pos
+	source_player.set_role(new_role)
+	# Actualizamos sus datos en memoria
+	_update_player_data_position(source_player)
+	
+	# B. Si había alguien en ese puesto lo mandamos al origen 
+	if incumbent_pid != -1 and incumbent_pid != source_pid:
+		var incumbent_player = _get_player_by_id(incumbent_pid)
+		
+		if incumbent_player:
+			# intercambio
+			incumbent_player.position = source_original_pos
+			
+			# Le quitamos el rol especial visualmente 
+			incumbent_player.set_role("WR") 
+			
+			# Actualizamos sus datos en memoria
+			_update_player_data_position(incumbent_player)
+			
+			print("Swap realizado: Jugador ", source_pid, " reemplazó a ", incumbent_pid)
+	
+	# 5. Actualizar las variables de estado global
+	match new_role:
+		"CENTER": center_player_id = source_pid
+		"QB": qb_player_id = source_pid
+	
+	# Si el jugador venía de OTRO rol especial, liberamos ese rol antiguo
+	if source_pid == center_player_id and new_role != "CENTER":
+		center_player_id = -1
+	if source_pid == qb_player_id and new_role != "QB":
+		qb_player_id = -1
+
 	content_changed.emit()
+	
+func _update_player_data_position(player_node):
+	var pos_data = {
+		"position": player_node.position,
+		"resource_path": player_node.data.resource_path if player_node.data else ""
+	}
+	_active_play_positions[player_node.player_id] = pos_data
+	
+	# Si tiene rutas, actualizamos el origen de la ruta también
+	if route_manager:
+		route_manager.update_route_origin(player_node.player_id, player_node.get_route_anchor())
 	
 func _auto_position_special_roles():
 	var bounds = calculate_grid_bounds()

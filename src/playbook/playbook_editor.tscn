@@ -1,4 +1,4 @@
-[gd_scene load_steps=9 format=3 uid="uid://uby6wv405ia6"]
+[gd_scene load_steps=10 format=3 uid="uid://uby6wv405ia6"]
 
 [ext_resource type="Script" uid="uid://cgiy3uu4qb8w8" path="res://src/playbook/PlaybookEditor.gd" id="1_ybrfa"]
 [ext_resource type="Texture2D" uid="uid://dl8pi2jccrcsr" path="res://assets/sprites/tocho_tactics_background.png" id="2_4aaqw"]
@@ -7,6 +7,7 @@
 [ext_resource type="PackedScene" uid="uid://bf1khj84lp83c" path="res://src/playbook/player/player_context_menu.tscn" id="5_unia6"]
 [ext_resource type="Texture2D" uid="uid://p2h53a8mxwno" path="res://assets/sprites/Icons/play_draft_icon.png" id="5_uu6s6"]
 [ext_resource type="Script" uid="uid://bc54gkxxvck7j" path="res://src/playbook/player/PlayerContextMenu.gd" id="6_mkvnw"]
+[ext_resource type="Texture2D" uid="uid://ccghq7pe7a8n8" path="res://assets/players_icons/face_01.png" id="8_vyx8u"]
 
 [sub_resource type="LabelSettings" id="LabelSettings_sigk0"]
 font_size = 46
@@ -176,11 +177,19 @@ mouse_filter = 1
 script = ExtResource("6_mkvnw")
 
 [node name="Background" parent="UI_Layer/MainLayout/HBoxContainer/LeftPanel/StatsPanel" index="0"]
-offset_left = -24.989561
-offset_top = 7.9680157
-offset_right = 15.010439
-offset_bottom = 47.968018
-scale = Vector2(9.893014, 10.290621)
+offset_left = -20.0
+offset_top = 77.914505
+offset_right = 20.0
+offset_bottom = 117.91451
+scale = Vector2(9.806836, 7.1696067)
+
+[node name="Portrait" parent="UI_Layer/MainLayout/HBoxContainer/LeftPanel/StatsPanel/Background" index="2"]
+offset_left = 5.3931103
+offset_top = 4.1514773
+offset_right = 47.393112
+offset_bottom = 42.151478
+scale = Vector2(0.25606638, 0.3548747)
+texture = ExtResource("8_vyx8u")
 
 [node name="Spacer" type="Control" parent="UI_Layer/MainLayout/HBoxContainer"]
 layout_mode = 2

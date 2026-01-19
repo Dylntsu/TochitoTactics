@@ -1,8 +1,15 @@
-[gd_scene load_steps=6 format=3 uid="uid://bf1khj84lp83c"]
+[gd_scene load_steps=13 format=3 uid="uid://bf1khj84lp83c"]
 
-[ext_resource type="Texture2D" uid="uid://dgbipya6wg1ct" path="res://assets/sprites/Player Manage.png" id="1_eu7yq"]
+[ext_resource type="Texture2D" uid="uid://18qfwy5glsvh" path="res://assets/sprites/Icons/ui_panel_main_stats.png" id="1_h0dom"]
 [ext_resource type="Texture2D" uid="uid://ckrpuaq8gq675" path="res://assets/players_icons/face_02.png" id="2_e3onk"]
 [ext_resource type="Texture2D" uid="uid://bxqocim063x7x" path="res://assets/sprites/Icons/gloves_icon.png" id="3_jjs5k"]
+[ext_resource type="Texture2D" uid="uid://5mcp22g463jd" path="res://assets/sprites/Icons/background_position.png" id="4_heu5y"]
+[ext_resource type="Texture2D" uid="uid://ccsu1se83blnq" path="res://assets/sprites/Icons/icon_attr_velocity.png" id="5_4pvfs"]
+[ext_resource type="Texture2D" uid="uid://5kie5syyc1vu" path="res://assets/sprites/Icons/icon_attr_stamina.png" id="6_bfv6a"]
+[ext_resource type="Texture2D" uid="uid://ccuqwqpv5iq43" path="res://assets/sprites/Icons/icon_attr_hands.png" id="7_jejg0"]
+[ext_resource type="Texture2D" uid="uid://dra5r7f4wvgf1" path="res://assets/sprites/Icons/icon_attr_arm.png" id="8_7gp86"]
+[ext_resource type="Texture2D" uid="uid://kabl4fgat525" path="res://assets/sprites/Icons/icon_attr_intelligence.png" id="9_jtsnp"]
+[ext_resource type="Texture2D" uid="uid://cghphnakd73kh" path="res://assets/sprites/Icons/icon_attr_agility.png" id="10_57cu7"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_eu7yq"]
 bg_color = Color(0.006264085, 0.1485506, 0.27336472, 1)
@@ -17,7 +24,7 @@ offset_left = 15.0
 offset_top = -2.0
 offset_right = 15.0
 offset_bottom = -2.0
-scale = Vector2(9.824954, 0.3782607)
+scale = Vector2(6.4616666, 0.186207)
 
 [node name="Background" type="NinePatchRect" parent="."]
 unique_name_in_owner = true
@@ -26,16 +33,16 @@ offset_right = 40.0
 offset_bottom = 40.0
 scale = Vector2(2.3783016, 47.72941)
 mouse_filter = 1
-texture = ExtResource("1_eu7yq")
+texture = ExtResource("1_h0dom")
 
 [node name="LeftColumn" type="VBoxContainer" parent="Background"]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 23.268234
-offset_top = 7.1565433
-offset_right = 27.268234
-offset_bottom = 189.15654
-scale = Vector2(0.10822533, 0.10822533)
+offset_left = 25.703106
+offset_top = 2.9254408
+offset_right = 145.70311
+offset_bottom = 184.92545
+scale = Vector2(0.10976175, 0.18883212)
 
 [node name="StaminaBar" type="ProgressBar" parent="Background/LeftColumn"]
 unique_name_in_owner = true
@@ -100,21 +107,21 @@ show_percentage = false
 [node name="Header" type="Label" parent="Background"]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 4.2862544
-offset_top = 5.7933927
-offset_right = 86.286255
-offset_bottom = 28.793392
-scale = Vector2(0.10822533, 0.10822533)
+offset_left = 1.4315655
+offset_top = 1.3502035
+offset_right = 83.431564
+offset_bottom = 24.350204
+scale = Vector2(0.12970866, 0.12970866)
 text = "--- Manage"
 
 [node name="Portrait" type="TextureRect" parent="Background"]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 7.342148
-offset_top = 7.7832317
-offset_right = 49.342148
-offset_bottom = 65.78323
-scale = Vector2(0.14487903, 0.14487903)
+offset_left = 5.4009056
+offset_top = 3.6005442
+offset_right = 47.400906
+offset_bottom = 41.600544
+scale = Vector2(0.22779177, 0.35663062)
 texture = ExtResource("2_e3onk")
 stretch_mode = 6
 
@@ -122,22 +129,23 @@ stretch_mode = 6
 unique_name_in_owner = true
 texture_filter = 1
 layout_mode = 0
-offset_left = 2.4104328
-offset_top = 15.755264
-offset_right = 156.41043
-offset_bottom = 38.755264
-scale = Vector2(0.10822533, 0.10822533)
+offset_left = 2.7329886
+offset_top = 17.552645
+offset_right = 156.73299
+offset_bottom = 40.552643
+scale = Vector2(0.100476034, 0.12605177)
 text = "Designated Position"
 horizontal_alignment = 1
 
 [node name="PosButton" type="TextureButton" parent="Background"]
 unique_name_in_owner = true
+z_index = 1
 layout_mode = 0
-offset_left = 5.294342
-offset_top = 17.679443
-offset_right = 805.2943
-offset_bottom = 817.67944
-scale = Vector2(0.013359777, 0.013359777)
+offset_left = 3.3837004
+offset_top = 22.61591
+offset_right = 803.3837
+offset_bottom = 822.6159
+scale = Vector2(0.01822909, 0.01822909)
 texture_normal = ExtResource("3_jjs5k")
 
 [node name="StatsGrid" type="GridContainer" parent="Background"]
@@ -147,5 +155,69 @@ offset_left = 20.92512
 offset_top = 5.4526043
 offset_right = 67.93392
 offset_bottom = 167.2292
-scale = Vector2(0.32338363, 0.126392)
+scale = Vector2(0.36242634, 0.20290354)
 columns = 2
+
+[node name="background_position_icon" type="TextureRect" parent="Background"]
+layout_mode = 0
+offset_left = 0.39042664
+offset_top = 21.040668
+offset_right = 800.39044
+offset_bottom = 821.04065
+scale = Vector2(0.025385968, 0.022206562)
+mouse_filter = 2
+texture = ExtResource("4_heu5y")
+
+[node name="velocity_icon" type="TextureRect" parent="Background"]
+layout_mode = 0
+offset_left = 20.822767
+offset_top = 9.338907
+offset_right = 124.82277
+offset_bottom = 64.33891
+scale = Vector2(0.04458765, 0.071119115)
+texture = ExtResource("5_4pvfs")
+
+[node name="stamina_icon" type="TextureRect" parent="Background"]
+layout_mode = 0
+offset_left = 21.017996
+offset_top = 2.812924
+offset_right = 125.018
+offset_bottom = 80.81293
+scale = Vector2(0.04263436, 0.06800354)
+texture = ExtResource("6_bfv6a")
+
+[node name="hands_icon" type="TextureRect" parent="Background"]
+layout_mode = 0
+offset_left = 20.822779
+offset_top = 14.289654
+offset_right = 124.82278
+offset_bottom = 102.28966
+scale = Vector2(0.04263436, 0.06800354)
+texture = ExtResource("7_jejg0")
+
+[node name="arm_icon" type="TextureRect" parent="Background"]
+layout_mode = 0
+offset_left = 21.79884
+offset_top = 20.70312
+offset_right = 125.79884
+offset_bottom = 108.70312
+scale = Vector2(0.033567224, 0.05354109)
+texture = ExtResource("8_7gp86")
+
+[node name="sense_icon" type="TextureRect" parent="Background"]
+layout_mode = 0
+offset_left = 22.124191
+offset_top = 26.891552
+offset_right = 126.12419
+offset_bottom = 114.891556
+scale = Vector2(0.030944247, 0.049357336)
+texture = ExtResource("9_jtsnp")
+
+[node name="agility_icon" type="TextureRect" parent="Background"]
+layout_mode = 0
+offset_left = 22.124193
+offset_top = 32.517403
+offset_right = 126.12419
+offset_bottom = 120.5174
+scale = Vector2(0.030944247, 0.049357336)
+texture = ExtResource("10_57cu7")

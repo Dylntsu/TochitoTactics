@@ -121,9 +121,18 @@ func _select_play_by_index(index: int):
 	var play_data = saved_plays[index]
 	_selected_play = play_data
 	
-	# Cargar en el Editor
-	if editor and editor.has_method("load_play_data"):
+	if editor:
+		# 1. Forzamos detener cualquier animación en curso
 		editor.stop_all_animations()
+		
+		# 2.Desbloqueamos explícitamente el RouteManager
+		editor.unlock_editor_for_editing()
+		
+		# 3. Limpiamos rutas fantasmas visuales antes de cargar las nuevas
+		if editor.route_manager:
+			editor.route_manager.clear_all_routes()
+			
+		# 4. Ahora sí, cargamos la data limpia
 		editor.load_play_data(play_data)
 	
 	_update_selector_visuals()

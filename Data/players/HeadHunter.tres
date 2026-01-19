@@ -7,11 +7,11 @@
 script = ExtResource("1_yrhxi")
 full_name = "HeadHunter"
 portrait = ExtResource("1_v76x2")
-stamina = 100.0
-speed = 100.0
-hands = 100.0
-arm = 100.0
-game_sense = 100.0
-agility = 100.0
+stamina = 21.429
+speed = 3.5
+hands = 22.024
+arm = 25.96
+game_sense = 8.929
+agility = 22.024
 default_role = "Center"
 metadata/_custom_type_script = "uid://c0pblvp8ja0ar"

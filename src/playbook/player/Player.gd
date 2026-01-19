@@ -15,6 +15,12 @@ signal interaction_ended
 		data = value
 		if is_inside_tree(): _apply_data_to_visuals()
 
+@export_group("Simulación de Movimiento")
+# Velocidad minima para un jugador con Stat de Velocidad 0
+@export var min_pixels_per_sec: float = 150.0 
+# Velocidad  maxima para un jugador con Stat de Velocidad 100
+@export var max_pixels_per_sec: float = 450.0
+
 # Getters para mantener compatibilidad
 var stamina_stat: float: 
 	get: return data.stamina if data else 50.0
@@ -68,6 +74,17 @@ func _ready():
 	
 	_apply_data_to_visuals()
 
+func _get_real_movement_speed() -> float:
+	# Obtenemos la stat, asegurando que esté entre 0 y 100
+	var stat_value = clamp(self.speed_stat, 0.0, 100.0)
+	
+	# Interpolación Lineal (Lerp): 
+	# Si stat es 0, usa min_pixels_per_sec. 
+	# Si stat es 100, usa max_pixels_per_sec.
+	# Si es 50, usa la mitad.
+	var weight = stat_value / 100.0
+	return lerp(min_pixels_per_sec, max_pixels_per_sec, weight)
+	
 func _apply_data_to_visuals():
 	if not data: return
 	if data.portrait:
@@ -103,17 +120,40 @@ func setup_player_visual(texture: Texture2D, id: int):
 # ==============================================================================
 func play_route():
 	if current_route.is_empty(): return
+	
 	stop_animation()
 	if is_dragging: stop_dragging()
 	input_pickable = false 
 	is_playing = true
+	
 	_active_tween = create_tween()
-	var duration_per_point = 0.2
+	
+	# 1. Calcular velocidad real basada en stats
+	var move_speed_pps = _get_real_movement_speed()
+	
+	# Necesitamos saber desde dónde partimos para calcular la distancia del primer segmento
+	# Usamos la posición actual visual (ajustada por el offset del panel si existe)
+	var center_offset = (visual_panel.size / 2.0) if visual_panel else Vector2.ZERO
+	var last_pos = position 
+	
 	for point in current_route:
-		var center_offset = (visual_panel.size / 2.0) if visual_panel else Vector2.ZERO
 		var target_pos = point - center_offset
-		_active_tween.tween_property(self, "position", target_pos, duration_per_point)\
+		
+		# 2. Física: Tiempo = Distancia / Velocidad
+		var distance = last_pos.distance_to(target_pos)
+		
+		# Evitamos división por cero o duraciones minúsculas
+		var duration = 0.0
+		if move_speed_pps > 0:
+			duration = distance / move_speed_pps
+		
+		# 3. Añadimos el paso al Tween
+		_active_tween.tween_property(self, "position", target_pos, duration)\
 			.set_trans(Tween.TRANS_LINEAR)
+		
+		# Actualizamos la 'última posición' para el cálculo del siguiente segmento
+		last_pos = target_pos
+
 	_active_tween.finished.connect(func(): is_playing = false)
 
 func stop_animation():

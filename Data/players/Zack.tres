@@ -6,10 +6,10 @@
 [resource]
 script = ExtResource("1_gv2m2")
 portrait = ExtResource("1_b5vxl")
-stamina = 100.0
-speed = 100.0
-hands = 0.0
-arm = 0.0
-game_sense = 0.0
-agility = 100.0
+stamina = 31.548000000000002
+speed = 10.0
+hands = 17.857
+arm = 22.619
+game_sense = 3.572
+agility = 32.143
 metadata/_custom_type_script = "uid://c0pblvp8ja0ar"

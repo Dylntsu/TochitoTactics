@@ -333,6 +333,7 @@ grow_vertical = 0
 scale = Vector2(6.033141, 20.705853)
 pivot_offset = Vector2(63.553493, 16.654343)
 texture = ExtResource("15_abdc4")
+metadata/_edit_lock_ = true
 
 [node name="PlaysHbox" type="HBoxContainer" parent="MatchUI/HUDMain/PlaysPanel"]
 layout_mode = 0
@@ -502,3 +503,4 @@ offset_right = 341.77887
 offset_bottom = -673.86743
 scale = Vector2(12.352348, 12.352348)
 texture = ExtResource("29_v8gw5")
+metadata/_edit_lock_ = true
