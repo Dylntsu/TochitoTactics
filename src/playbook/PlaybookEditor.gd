@@ -347,22 +347,27 @@ func _on_player_start_route_requested(player_node):
 	route_manager.try_start_route(pid, player_node.get_route_anchor())
 
 # Calcula la posición ideal en el Grid para un rol específico
+#refactorizacion de posiciones ajustado a los nuevos limites
 func _get_role_target_position(role_name: String) -> Vector2:
-	if grid_points.is_empty(): return Vector2.ZERO
+	# Validación de seguridad
+	if not is_instance_valid(capture_frame) or spacing == 0:
+		return Vector2.ZERO
+
+	var frame_rect = capture_frame.get_global_rect()
+	var center_x = frame_rect.get_center().x
 	
-	var bounds = calculate_grid_bounds()
-	var center_x = bounds.get_center().x
-	
-	var base_limit_index = int(grid_size.y - offensive_limit_row_offset)
-	var scrimmage_y = grid_points[clamp(base_limit_index, 0, grid_points.size()-1)].y
+	var desired_y = frame_rect.end.y - (spacing * 1.5)
+	var scrimmage_y = clamp(desired_y, frame_rect.position.y, frame_rect.end.y - (spacing * 0.5))
 	
 	match role_name:
 		"CENTER":
-			return Vector2(center_x, scrimmage_y + (spacing * 0.2))
+			return Vector2(center_x, scrimmage_y)
+			
 		"QB":
-			return Vector2(center_x, scrimmage_y + (spacing * qb_depth_offset))
+			return Vector2(center_x, scrimmage_y + (spacing * 0.5))
+			
 		_:
-			return Vector2.ZERO # Retorno por defecto si no es un rol especial
+			return Vector2.ZERO
 
 func _on_player_moved(player_node):
 	# 1. Actualizar memoria de posiciones
