@@ -1,11 +1,16 @@
 extends Node2D
 
 @export var player_scene: PackedScene 
+@export var ball_scene: PackedScene
 @onready var container = %NodesContainer
 @onready var match_ui = $MatchUI 
 
 var scrimmage_line_y: float = 368.0
 var team_colors = [Color(1,1,1), Color(1,0.5,0.5), Color(0.5,1,0.5), Color(0.5,0.5,1), Color(1,0.8,0.4)]
+# Referencias directas para lógica de juego
+var ball_instance: Ball = null
+var center_player = null
+var qb_player = null
 
 # Variable para saber si ya hay una jugada lista para empezar
 var is_play_ready: bool = false
@@ -13,7 +18,6 @@ var is_play_ready: bool = false
 func _ready():
 	if match_ui:
 		match_ui.play_selected.connect(_on_play_icon_pressed)
-	
 	# Instanciamos a los 5 jugadores desde el inicio en formación básica
 	spawn_default_formation()
 
@@ -59,24 +63,37 @@ func _on_play_icon_pressed(file_path: String):
 func load_custom_play(play_data: Dictionary):
 	var field_center_x = get_viewport_rect().size.x / 2
 	var match_origin = Vector2(field_center_x, scrimmage_line_y)
-	var editor_origin = Vector2(640.0, 550.0)
+	
+	# IMPORTANTE: Asegúrate que este origen coincida con el centro de tu editor
+	# Si tu editor es de 1280x720, el centro visual suele ser 640, 360 (o donde esté tu frame)
+	var editor_origin = Vector2(640.0, 360.0) 
 
 	var formations = play_data.get("formations", {})
 	var routes = play_data.get("routes", {})
 
-	# En lugar de borrar, buscamos a los jugadores que ya existen
 	var players = container.get_children()
 	
 	for i in range(players.size()):
 		var p = players[i]
-		var pid = i # Usamos el índice como ID
+		var pid = i 
 		
 		# 1. Actualizar posición si existe en la jugada
 		if formations.has(pid):
-			var offset = formations[pid] - editor_origin
+			var data_entry = formations[pid]
+			var target_pos = Vector2.ZERO
+			
+			# --- CORRECCIÓN AQUÍ ---
+			# Verificamos si es el Diccionario nuevo o un Vector2 antiguo
+			if data_entry is Dictionary and data_entry.has("position"):
+				target_pos = data_entry["position"]
+			elif data_entry is Vector2:
+				target_pos = data_entry
+			
+			# Ahora sí, Vector2 - Vector2 es una operación válida
+			var offset = target_pos - editor_origin
 			p.global_position = match_origin + offset
 		
-		# 2. Actualizar ruta
+		# 2. Actualizar ruta (Esto se mantiene igual porque las rutas son Arrays de Vectors)
 		if routes.has(pid):
 			var global_route = []
 			for point in routes[pid]:
@@ -84,21 +101,84 @@ func load_custom_play(play_data: Dictionary):
 				global_route.append(match_origin + route_offset)
 			p.active_route = global_route
 		else:
-			p.active_route = [] # Limpiar ruta si no tiene
+			p.active_route = []
+			
+	# Al terminar de cargar posiciones, hacemos el spawn de la pelota y asignación de roles
+	_assign_roles_logic()
+	_spawn_ball()
+	
+func _assign_roles_logic():
+	# Lógica simple: El jugador más cercano al centro del campo (X) y a la línea (Y) es el Centro
+	# El jugador más cercano al Centro pero "atrás" es el QB
+	var players = container.get_children()
+	var viewport_center_x = get_viewport_rect().size.x / 2
+	
+	var closest_dist = 99999.0
+	
+	# 1. Encontrar al Centro
+	for p in players:
+		var dist = p.global_position.distance_to(Vector2(viewport_center_x, scrimmage_line_y))
+		if dist < closest_dist:
+			closest_dist = dist
+			center_player = p
+			
+	# 2. Encontrar al QB (El más cercano al centro, excluyendo al centro mismo)
+	closest_dist = 99999.0
+	for p in players:
+		if p == center_player: continue
+		var dist = p.global_position.distance_to(center_player.global_position)
+		if dist < closest_dist:
+			closest_dist = dist
+			qb_player = p
+
+	print("Roles asignados -> Centro: ", center_player.name, " | QB: ", qb_player.name)
+
+func _spawn_ball():
+	if ball_instance:
+		ball_instance.queue_free()
+	
+	if ball_scene and center_player:
+		ball_instance = ball_scene.instantiate()
+		add_child(ball_instance)
+		ball_instance.attach_to_player(center_player)
 
 func start_auto_play_countdown():
-	# si no hay jugada, salimos
 	if not is_play_ready: return
+	print("Snap en 3...")
+	await get_tree().create_timer(1.0).timeout
+	print("Snap en 2...")
+	await get_tree().create_timer(1.0).timeout
+	print("Snap en 1...")
+	await get_tree().create_timer(1.0).timeout
 	
-	print("Jugada cargada. Iniciando en 5 segundos...")
-	await get_tree().create_timer(5.0).timeout
-	
-	# Verificamos de nuevo antes de lanzar 
-	if is_play_ready:
-		launch_play()
+	perform_snap()
 
-func launch_play():
-	print("¡Acción!")
+func perform_snap():
+	if not ball_instance or not qb_player: 
+		launch_runners() # Fallback por si algo falla
+		return
+		
+	print("¡SNAP!")
+	# El balón viaja del Centro al QB
+	ball_instance.snap_to(qb_player.global_position)
+	
+	# Esperamos a que el balón llegue (calculado o por señal)
+	# Por simplicidad, esperamos el tiempo que le toma viajar
+	var dist = center_player.global_position.distance_to(qb_player.global_position)
+	var travel_time = dist / ball_instance.speed
+	
+	await get_tree().create_timer(travel_time).timeout
+	
+	# El QB atrapa el balón
+	ball_instance.attach_to_player(qb_player)
+	print("QB tiene el balón -> ¡WRs salen!")
+	
+	# AHORA sí salen los corredores
+	launch_runners()
+
+func launch_runners():
 	for player in container.get_children():
-		if "is_running" in player:
+		# El Centro y el QB usualmente no corren rutas inmediatas en formación básica
+		# pero por ahora dejamos que todos corran si tienen ruta
+		if "is_running" in player and not player.active_route.is_empty():
 			player.is_running = true

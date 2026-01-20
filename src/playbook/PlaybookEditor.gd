@@ -48,7 +48,7 @@ signal content_changed # señal para avisar a la UI
 @export_range(0.0, 0.5) var formation_bottom_margin: float = 0.099
 @export var player_count: int = 5 
 
-# === BASE DE DATOS DE EQUIPO ===
+# === BASE DE DATOS DEL EQUIPO ===
 var team_database: Array[Resource] = []
 const PLAYERS_DIR = "res://data/players/" 
 
@@ -62,6 +62,7 @@ var selected_player_id: int = -1
 var grid_points: Array[Vector2] = []
 var spacing: int = 0
 var _active_play_positions: Dictionary = {}
+var is_precision_mode_active: bool = false
 
 # ==============================================================================
 # CICLO DE VIDA
@@ -111,12 +112,12 @@ func _ready():
 func _on_player_input_event(_viewport, event, _shape_idx, player_node):
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_RIGHT:
 		
-		# 1. Selección visual en el campo
+		# Selección visual en el campo
 		deselect_all_players()
 		selected_player_id = player_node.player_id
 		player_node.set_selected(true)
 		
-		# 2. Actualizar el Panel Estático Lateral
+		# Actualizar el Panel Estático Lateral
 		_update_stats_panel(player_node)
 
 func _update_stats_panel(player_node):
@@ -170,7 +171,6 @@ func rebuild_editor():
 	render_grid_visuals()
 	render_formation() 
 	
-	# CORRECCIÓN DE LÍMITES:
 	if route_manager:
 		# Forzamos al manager a usar el CaptureFrame como límite de dibujo
 		route_manager.limit_rect = frame_rect
@@ -185,8 +185,9 @@ func calculate_grid_bounds() -> Rect2:
 	return Rect2(x, y, width, height)
 
 func render_grid_visuals():
+	# Limpieza previa
 	for child in nodes_container.get_children():
-		if not child.name.begins_with("PlayerStart"):
+		if not child.name.begins_with("PlayerStart") and not child is Area2D:
 			child.queue_free()
 			
 	var marker_size = clamp(spacing * 0.12, 4, 12)
@@ -196,6 +197,10 @@ func render_grid_visuals():
 		marker.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		marker.color = Color(1, 1, 1, 0.5)
 		marker.position = pos - (marker.size / 2)
+		
+		# grupo para manipularlos todos juntos
+		marker.add_to_group("GridMarkers") 
+		
 		nodes_container.add_child(marker)
 
 func render_formation():
@@ -206,12 +211,12 @@ func render_formation():
 
 	if player_count <= 0: return
 
-	# 1. Definir el "Lienzo"
+	# Definir el lienzo
 	var frame_rect = capture_frame.get_global_rect()
 	var center_x = frame_rect.get_center().x
 	var available_width = frame_rect.size.x * 0.90 
 	
-	# 2. Lógica de Espaciado Adaptativo
+	# Lógica de Espaciado Adaptativo
 	var ideal_separation = spacing * 1.5
 	var final_separation = ideal_separation
 	
@@ -223,13 +228,11 @@ func render_formation():
 	var total_formation_width = (player_count - 1) * final_separation
 	var start_x = center_x - (total_formation_width / 2.0)
 	
-	# 3. Definir Altura Base (Punto de Instanciación)
+	# Definir Altura Base 
 	var desired_y = frame_rect.end.y - (spacing * 1.5)
 	var clamped_y = clamp(desired_y, frame_rect.position.y, frame_rect.end.y - (spacing * 0.5))
 	
 	# --- AJUSTE DE LÍMITE EXACTO ---
-	# Antes restábamos (subíamos la línea). Ahora la dejamos EXACTA en clamped_y.
-	# Esto significa que el jugador nace tocando el techo invisible.
 	var scrimmage_line_y = clamped_y 
 	
 	# Definimos el rectángulo de restricción
@@ -310,13 +313,12 @@ func _input(event):
 			if route_manager.is_editing:
 				route_manager.finish_route()
 
-	# ESTA SECCIÓN FUE RESTAURADA:
 	elif event is InputEventMouseMotion:
 		if route_manager.is_editing:
-			# 1. Muestra la línea elástica (Preview)
+			# Muestrael el Preview
 			route_manager.update_preview(mouse_pos) 
 			
-			# 2. Permite dibujar arrastrando (si el click izquierdo está hundido)
+			# Permite dibujar arrastrando 
 			if Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT):
 				route_manager.handle_input(mouse_pos)
 
@@ -337,13 +339,16 @@ func _try_click_existing_route_end(mouse_pos: Vector2):
 func _on_player_start_route_requested(player_node):
 	var pid = player_node.player_id
 	
+	#Si ya tiene una ruta a medias, la retomamos
 	if route_manager.active_routes.has(pid):
 		route_manager.resume_editing_route(pid)
 		return 
 
+	# Si estábamos editando a otro jugador, cerramos esa edición anterior
 	if route_manager.is_editing and route_manager.current_player_id != pid:
 		route_manager.finish_route()
 	
+	# Iniciamos la nueva ruta (QB incluido)
 	route_manager.try_start_route(pid, player_node.get_route_anchor())
 
 # Calcula la posición ideal en el Grid para un rol específico
@@ -370,14 +375,14 @@ func _get_role_target_position(role_name: String) -> Vector2:
 			return Vector2.ZERO
 
 func _on_player_moved(player_node):
-	# 1. Actualizar memoria de posiciones
+	# Actualizar memoria de posiciones
 	var pos_data = {
 		"position": player_node.position,
 		"resource_path": player_node.data.resource_path if player_node.data else ""
 	}
 	_active_play_positions[player_node.player_id] = pos_data
 	
-	# 2. Actualizar visualmente la línea de la ruta
+	# Actualizar visualmente la línea de la ruta
 	if route_manager:
 		route_manager.update_route_origin(player_node.player_id, player_node.get_route_anchor())
 func stop_all_animations():
@@ -467,7 +472,6 @@ func load_play_data(play_data) -> void:
 	# Reconstruimos los jugadores visualmente
 	rebuild_editor()
 	
-	# --- RECONEXIÓN CRÍTICA ---
 	# Cargamos las rutas en el Manager
 	if route_manager:
 		route_manager.load_routes_from_data(routes_data)
@@ -477,11 +481,8 @@ func load_play_data(play_data) -> void:
 		if child is Area2D and "player_id" in child:
 			var p_id = child.player_id
 			
-			# Si este jugador tiene ruta guardada...
 			if routes_data.has(p_id):
 				child.current_route = routes_data[p_id]
-				# ... FORZAMOS al RouteManager a saber que este jugador es el dueño de esa línea
-				# Esto conecta el movimiento del jugador con el inicio de la línea
 				if route_manager:
 					route_manager.update_route_origin(p_id, child.get_route_anchor(), true)
 func play_current_play():
@@ -554,10 +555,10 @@ func assign_role_to_player(source_pid: int, new_role: String):
 	if not source_player: return
 	
 	# Guardamos la posición original del jugador que estamos moviendo
-	# para mandarle ahí al jugador que sea desalojado (Swap)
+	# para mandarle ahí al jugador que sea desalojado 
 	var source_original_pos = source_player.position
 	
-	# 2. Calcular dónde debe ir el nuevo rol
+	# Calcular dónde debe ir el nuevo rol
 	var target_pos = _get_role_target_position(new_role)
 	if target_pos == Vector2.ZERO: return # Si el rol no tiene posición fija, no hacemos nada automático
 	
@@ -638,3 +639,51 @@ func _show_toast_in_editor(message: String):
 	print("[Editor]: ", message)
 	if has_signal("content_changed"):
 		content_changed.emit()
+
+func set_visual_precision_mode(active: bool):
+	if is_precision_mode_active != active:
+		is_precision_mode_active = active
+		
+		# 1. Comunicar al cerebro matemático
+		if route_manager:
+			route_manager.set_precision_mode(active)
+			
+		#Rejilla Fina
+		queue_redraw() 
+		# Si es Preciso -> Ocultamos nodos grandes
+		# Si es Simple -> Mostramos nodos grandes
+		get_tree().call_group("GridMarkers", "set_visible", not active)
+		
+		if active:
+			_show_toast_in_editor("Modo Precisión: ON")
+		else:
+			_show_toast_in_editor("Modo Precisión: OFF")
+
+# --- DIBUJADO (View Logic) ---
+func _draw():
+	
+	if is_precision_mode_active:
+		_draw_precision_grid()
+
+func _draw_precision_grid():
+	# Dibujamos sobre el capture_frame
+	if not capture_frame: return
+	
+	var rect = capture_frame.get_global_rect()
+	# Convertimos coordenadas globales a locales para draw_line
+	var local_rect = Rect2(to_local(rect.position), rect.size)
+	
+	var step = 10.0 
+	var grid_color = Color(1, 1, 1, 0.15) # Blanco tenue transparente
+	
+	# Dibujar Verticales
+	var x = local_rect.position.x
+	while x <= local_rect.end.x:
+		draw_line(Vector2(x, local_rect.position.y), Vector2(x, local_rect.end.y), grid_color, 1.0)
+		x += step
+		
+	# Dibujar Horizontales
+	var y = local_rect.position.y
+	while y <= local_rect.end.y:
+		draw_line(Vector2(local_rect.position.x, y), Vector2(local_rect.end.x, y), grid_color, 1.0)
+		y += step

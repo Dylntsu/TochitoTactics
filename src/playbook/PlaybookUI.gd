@@ -14,6 +14,7 @@ const SAVE_DIR = "user://plays/"
 @onready var btn_next = %BtnNext
 @onready var preview_rect = %PreviewRect  
 @onready var play_name_label = %PlayNameLabel 
+@onready var btn_precision: Button = %BtnPrecision
 
 @export_group("Assets UI")
 @export var draft_icon_texture: Texture2D 
@@ -26,11 +27,11 @@ const SAVE_DIR = "user://plays/"
 @onready var delete_confirm_popup: ConfirmationDialog = %DeleteConfirmPopup
 @onready var autosave_timer = $AutosaveTimer
 
-# Estado del Carrusel
 var saved_plays: Array[Resource] = []
 var current_play_index: int = 0
 var _pending_play: Resource = null # Para guardar
 var _selected_play: Resource = null # Jugada activa
+var _is_shift_pressed: bool = false
 
 # ==============================================================================
 # CICLO DE VIDA
@@ -60,7 +61,7 @@ func _ready() -> void:
 		_update_selector_visuals()
 
 func _setup_connections() -> void:
-	# 1. Botones del Carrusel (NUEVO)
+	# 1. Botones del Carrusel 
 	if is_instance_valid(btn_prev): btn_prev.pressed.connect(_on_prev_play)
 	if is_instance_valid(btn_next): btn_next.pressed.connect(_on_next_play)
 
@@ -70,6 +71,8 @@ func _setup_connections() -> void:
 	if is_instance_valid(save_popup): save_popup.confirmed.connect(_on_save_confirmed)
 	if is_instance_valid(%BtnDelete): %BtnDelete.pressed.connect(_on_delete_button_pressed)
 	if is_instance_valid(delete_confirm_popup): delete_confirm_popup.confirmed.connect(_on_delete_confirmed)
+	if is_instance_valid(btn_precision):
+		btn_precision.toggled.connect(_on_precision_button_toggled)
 	
 	# 3. Acciones de Juego
 	if is_instance_valid(%BtnPlay): %BtnPlay.pressed.connect(_on_play_preview_pressed)
@@ -78,17 +81,47 @@ func _setup_connections() -> void:
 	# 5. Timer
 	if autosave_timer: autosave_timer.timeout.connect(_on_autosave_timer_timeout)
 
+# --- MANEJO DE INPUT  ---
+func _input(event):
+	if event is InputEventKey and event.keycode == KEY_SHIFT:
+		if _is_shift_pressed != event.pressed:
+			_is_shift_pressed = event.pressed
+			_update_editor_precision_state()
+
+func _on_precision_button_toggled(_toggled_on: bool):
+	_update_editor_precision_state()
+
+func _update_editor_precision_state():
+	# 1. Verificar si el editor está asignado
+	if not is_instance_valid(editor):
+		push_error("PlaybookUI: ¡ERROR! La variable 'editor' no está asignada en el Inspector.")
+		return
+	
+	# 2. Calcular estado
+	var button_active = btn_precision.button_pressed if is_instance_valid(btn_precision) else false
+	var is_active = button_active or _is_shift_pressed
+	
+	print("PlaybookUI: Enviando estado precisión -> ", is_active) # <--- DEBUG
+	
+	# 3. Enviar al editor
+	editor.set_visual_precision_mode(is_active)
+	
+	# Feedback Visual en el botón
+	if is_instance_valid(btn_precision):
+		# Cambiamos el color del texto o icono para que se note
+		btn_precision.modulate = Color.YELLOW if is_active else Color.WHITE
+
 # ==============================================================================
 # LÓGICA DEL CARRUSEL (SELECTOR)
 # ==============================================================================
 func _on_prev_play():
 	if saved_plays.is_empty(): return
 	
-	# Si estamos en una jugada YA guardada (index >= 0), guardamos cambios
+	# Si (index >= 0) guardamos cambios
 	if current_play_index != -1:
 		_perform_silent_save()
 	else:
-		# Si estamos en borrador (-1), al cambiar simplemente se descarta
+		# (-1) al cambiar simplemente se descarta
 		_show_toast("Borrador descartado", Color.ORANGE)
 
 	# Cálculo de índice seguro
@@ -132,7 +165,7 @@ func _select_play_by_index(index: int):
 		if editor.route_manager:
 			editor.route_manager.clear_all_routes()
 			
-		# 4. Ahora sí, cargamos la data limpia
+		# 4. cargamos la data limpia
 		editor.load_play_data(play_data)
 	
 	_update_selector_visuals()
@@ -144,7 +177,7 @@ func _update_selector_visuals():
 		if preview_rect: preview_rect.texture = null
 		return
 	
-	# Caso 2: Estamos en modo BORRADOR (Nueva Jugada no guardada)
+	# Caso 2: Estamos en modo BORRADOR
 	if current_play_index == -1:
 		play_name_label.text = _selected_play.name 
 		
@@ -155,7 +188,7 @@ func _update_selector_visuals():
 				preview_rect.texture = null 
 		return
 
-	# Caso 3: Jugada Guardada (Comportamiento normal)
+	# Caso 3: Jugada Guardada
 	var play = saved_plays[current_play_index]
 	play_name_label.text = play.name
 	
@@ -193,7 +226,6 @@ func _on_new_play_requested() -> void:
 	if current_play_index != -1:
 		_perform_silent_save()
 	
-	# 2. SOLUCIÓN AL BUG DE BLOQUEO:
 	# En lugar de solo unlock_all_players, usamos unlock_editor_for_editing
 	editor.unlock_editor_for_editing() 
 	
@@ -290,7 +322,7 @@ func _on_autosave_timer_timeout() -> void:
 	_perform_silent_save()
 
 func _perform_silent_save() -> void:
-	# Si no hay jugada o esta en MODO BORRADOR (-1), NO guardamos automáticamente
+	# Si no hay jugada o esta en MODO BORRADOR no guardamos automáticamente
 	if _selected_play == null or current_play_index == -1: 
 		return
 		

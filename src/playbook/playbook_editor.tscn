@@ -203,50 +203,56 @@ mouse_filter = 2
 
 [node name="BtnNew" type="Button" parent="UI_Layer/MainLayout/HBoxContainer/RightPanel"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(120, 120)
+custom_minimum_size = Vector2(110, 110)
 layout_mode = 2
 text = "+ Nueva Jugada"
 
-[node name="VSeparator" type="VSeparator" parent="UI_Layer/MainLayout/HBoxContainer/RightPanel"]
-layout_mode = 2
-metadata/_edit_lock_ = true
-
 [node name="BtnSave" type="Button" parent="UI_Layer/MainLayout/HBoxContainer/RightPanel"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(120, 120)
+custom_minimum_size = Vector2(110, 110)
 layout_mode = 2
 text = "Guardar Jugada"
 
 [node name="BtnReset" type="Button" parent="UI_Layer/MainLayout/HBoxContainer/RightPanel"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(120, 120)
+custom_minimum_size = Vector2(110, 110)
 layout_mode = 2
 text = "Restablecer Posiciones
 "
 
 [node name="BtnDelete" type="Button" parent="UI_Layer/MainLayout/HBoxContainer/RightPanel"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(120, 120)
+custom_minimum_size = Vector2(110, 110)
 layout_mode = 2
 text = "Borrar Jugada"
 
 [node name="BtnPlay" type="Button" parent="UI_Layer/MainLayout/HBoxContainer/RightPanel"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(120, 120)
+custom_minimum_size = Vector2(110, 110)
 layout_mode = 2
 text = "Probar Jugada"
 
 [node name="BtnSetQB" type="Button" parent="UI_Layer/MainLayout/HBoxContainer/RightPanel"]
 unique_name_in_owner = true
 visible = false
+custom_minimum_size = Vector2(110, 110)
 layout_mode = 2
 text = "Designar a QuarterBack"
 
 [node name="BtnSetCenter" type="Button" parent="UI_Layer/MainLayout/HBoxContainer/RightPanel"]
 unique_name_in_owner = true
 visible = false
+custom_minimum_size = Vector2(110, 110)
 layout_mode = 2
 text = "Desingar a Centro
+"
+
+[node name="BtnPrecision" type="Button" parent="UI_Layer/MainLayout/HBoxContainer/RightPanel"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(110, 110)
+layout_mode = 2
+toggle_mode = true
+text = "Modo Preciso
 "
 
 [node name="SavePlayPopup" type="ConfirmationDialog" parent="UI_Layer"]

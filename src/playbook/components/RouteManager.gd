@@ -25,7 +25,6 @@ var is_editing: bool = false
 var current_player_id: int = -1
 var current_dist_accumulator: float = 0.0
 var is_locked: bool = false
-# Variable para saber hasta dónde pueden llegar las líneas
 var limit_rect: Rect2 = Rect2(0, 0, 1920, 1080) 
 var margin = 10.0 # Píxeles de separación del borde
 var safe_limit: Rect2 # Crea un rectángulo 10px más pequeño hacia adentro
@@ -36,6 +35,10 @@ var _snap_distance: float
 var _max_step_len: float
 var _dash_texture: Texture2D
 var _field_bounds: Rect2 = Rect2()
+
+#modo preciso
+var is_precision_mode: bool = false
+const PRECISION_SNAP_SIZE: float = 10.0 
 
 ## Bloquea o desbloquea la capacidad de editar rutas
 func set_locked(value: bool):
@@ -48,6 +51,35 @@ func set_field_limits(rect: Rect2):
 	limit_rect = rect
 	safe_limit = limit_rect.grow(-margin)
 	
+func get_snapped_position(pos: Vector2) -> Vector2:
+	# --- MODO PRECISO  ---
+	if is_precision_mode:
+		var x = round(pos.x / PRECISION_SNAP_SIZE) * PRECISION_SNAP_SIZE
+		var y = round(pos.y / PRECISION_SNAP_SIZE) * PRECISION_SNAP_SIZE
+		return Vector2(x, y)
+
+	# --- MODO SIMPLE ---
+	# Solo permite seleccionar los nodos grandes predefinidos
+	var closest_point = pos
+	var min_dist = INF
+	
+	if _grid_points.size() > 0:
+		for point in _grid_points:
+			var dist = pos.distance_to(point)
+			if dist < min_dist:
+				min_dist = dist
+				closest_point = point
+		
+		#Si estás en modo simple, siempre te atrae al nodo grande
+		# a menos que se este fuera de rango de edición
+		if min_dist < _snap_distance * 1.5: 
+			return closest_point
+			
+	return pos # Fallback
+
+func set_precision_mode(enabled: bool):
+	is_precision_mode = enabled
+	print("RouteManager: Modo Precisión recibido = ", enabled) 
 	
 func setup(grid_points: Array[Vector2], spacing: int, field_bounds: Rect2):
 	_grid_points = grid_points
@@ -110,58 +142,71 @@ func update_route_origin(player_id: int, new_origin: Vector2, force: bool = fals
 func handle_input(mouse_pos: Vector2):
 	if is_locked or not is_editing: return
 	
-	# Chequeo inicial del mouse
-	if _field_bounds.has_area() and not _field_bounds.has_point(to_global(mouse_pos)): 
-		# Si FieldEditor está en 0,0, funciona. Si no, usa to_global
-		return 
-	
-	var closest = _get_closest_node(mouse_pos)
-	if closest == Vector2.INF: return
-	
-	# Para mayor seguridad convertimos
-	if _field_bounds.has_area() and not _field_bounds.has_point(to_global(closest)):
-		return # Ignoramos este punto si la grilla se sale del campo
-	# =============================
+	if _field_bounds.has_area() and not _field_bounds.has_point(to_global(mouse_pos)):
+		return
 
-	if current_route.has(closest):
-		var idx = current_route.find(closest)
+	var target_pos = get_snapped_position(mouse_pos)
+	
+	# Validación de límites
+	if _field_bounds.has_area() and not _field_bounds.has_point(to_global(target_pos)):
+		return
+
+	# Lógica Deshacer
+	if current_route.has(target_pos):
+		var idx = current_route.find(target_pos)
 		_recalculate_current_distance(idx)
 		current_route = current_route.slice(0, idx + 1)
 		update_visuals()
 		return
 
 	var last_node = current_route.back()
-	var points_to_add: Array[Vector2] = []
-	var dist_cost_preview = 0.0
+	var step_dist = last_node.distance_to(target_pos)
+
+	# ======================================================================
+	# DIFURCACIÓN DE LÓGICA POR MODO
+	# ======================================================================
 	
-	if current_route.size() == 1:
-		var step_dist = last_node.distance_to(closest)
-		if step_dist > _spacing * bridge_limit_multiplier: return
-		points_to_add.append(closest)
-		dist_cost_preview = step_dist
+	if is_precision_mode:
+		# --- LÓGICA MODO PRECISO ---
+		# Permite saltos libres, ángulos cualquiera, sin nodos intermedios forzados.
+		# Solo se valida la estamina total
+		if current_dist_accumulator + step_dist > max_total_distance_pixels: 
+			return
+			
+		current_route.append(target_pos)
+		current_dist_accumulator += step_dist
+		
 	else:
-		points_to_add = _get_intermediate_points(last_node, closest)
+		# --- LÓGICA MODO SIMPLE---
+		# Valida saltos máximos entre nodos grandes y genera puntos intermedios.
+		
+		# 1. Validación de salto (No puedes saltarte 3 nodos de golpe)
+		if step_dist > _spacing * bridge_limit_multiplier: 
+			return
+			
+		# 2. Generación de puntos intermedios (si pasaste por encima de uno sin hacer click)
+		var points_to_add = _get_intermediate_points(last_node, target_pos)
+		var dist_cost = 0.0
 		var temp_last = last_node
 		for p in points_to_add:
-			dist_cost_preview += temp_last.distance_to(p)
+			dist_cost += temp_last.distance_to(p)
 			temp_last = p
-
-	if current_dist_accumulator + dist_cost_preview > max_total_distance_pixels: return 
-
-	for p in points_to_add:
-		# Verificamos cada punto intermedio también
-		if _field_bounds.has_area() and not _field_bounds.has_point(to_global(p)):
-			continue 
 			
-		if not current_route.has(p):
-			current_route.append(p)
-			current_dist_accumulator += last_node.distance_to(p)
-			last_node = p
+		if current_dist_accumulator + dist_cost > max_total_distance_pixels: 
+			return
+			
+		for p in points_to_add:
+			if not current_route.has(p):
+				current_route.append(p)
+				current_dist_accumulator += last_node.distance_to(p)
+				last_node = p
+
+	# ======================================================================
+	
 	update_visuals()
 
 
 func update_preview(mouse_pos: Vector2):
-	# Si está bloqueado o no editamos, limpiamos la línea de previsualización
 	if is_locked or not is_editing or current_route.is_empty():
 		preview_line.points = []
 		return
@@ -171,35 +216,38 @@ func update_preview(mouse_pos: Vector2):
 		return
 
 	var last = current_route.back()
-	var closest = _get_closest_node(mouse_pos)
-	var target = mouse_pos
-	
-	if closest != Vector2.INF:
-		var limit = _max_step_len
-		if current_route.size() == 1: limit = _spacing * 1.8
-		if last.distance_to(closest) <= limit: target = closest
-	
+	var target = get_snapped_position(mouse_pos)
+	# Coloreado de advertencia
 	var color = Color(1, 1, 1, 0.5)
-	if last.distance_to(target) > _max_step_len and current_route.size() > 1: color = Color(1, 0, 0, 0.2)
-	elif current_dist_accumulator + last.distance_to(target) > max_total_distance_pixels: color = Color(1, 0.5, 0, 0.8)
+	# En modo normal, avisamos si el salto es muy largo
+	if not is_precision_mode and last.distance_to(target) > _max_step_len:
+		color = Color(1, 0, 0, 0.2)
+	# Avisamos si nos quedamos sin estamina (distancia total)
+	elif current_dist_accumulator + last.distance_to(target) > max_total_distance_pixels: 
+		color = Color(1, 0.5, 0, 0.8)
 	
 	preview_line.points = [last, target]
 	preview_line.default_color = color
 
 func finish_route():
 	if current_route.size() >= 2:
-		var new_line = route_line.duplicate()
+		var new_line = Line2D.new()
 		new_line.points = current_route
+		new_line.width = 4.0 # Aseguramos un ancho visible
+		
+		# 2. Esquinas redondeadas
+		new_line.joint_mode = Line2D.LINE_JOINT_ROUND
+		new_line.begin_cap_mode = Line2D.LINE_CAP_ROUND
+		new_line.end_cap_mode = Line2D.LINE_CAP_ROUND
+		
+		# 3. Color
 		var color_idx = current_player_id % PLAYER_COLORS.size()
 		new_line.default_color = PLAYER_COLORS[color_idx]
-		new_line.texture = _dash_texture
-		new_line.texture_mode = Line2D.LINE_TEXTURE_TILE
-		if current_player_id % 2 != 0: 
-			new_line.texture_repeat = CanvasItem.TEXTURE_REPEAT_ENABLED
-
+		new_line.default_color.a = 1.0 # Opacidad total
+		
+		# 5. Orden de dibujado
 		new_line.z_as_relative = false 
-		new_line.z_index = 5 + current_player_id
-		new_line.default_color.a = 1.0
+		new_line.z_index = 5 + current_player_id # Para que se dibuje sobre el pasto
 		new_line.visible = true
 		
 		add_child(new_line) 

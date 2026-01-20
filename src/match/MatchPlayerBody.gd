@@ -19,6 +19,8 @@ var is_running: bool = false
 var current_stamina: float = 0.0 # Estamina actual en tiempo real
 var player_id: int = 0
 
+var has_ball: bool = false # Controlado por el Ball.gd al hacer attach
+
 const WORLD_SPEED_SCALE = 15.0
 
 @onready var anim = $Visuals/AnimatedSprite2D
