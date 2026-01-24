@@ -1,11 +1,10 @@
-[gd_scene load_steps=33 format=3 uid="uid://ckn0rdmja4fma"]
+[gd_scene load_steps=32 format=3 uid="uid://ckn0rdmja4fma"]
 
 [ext_resource type="Script" uid="uid://cd3n4d8e0xdq5" path="res://src/match/match_player.gd" id="1_1r1rj"]
 [ext_resource type="Texture2D" uid="uid://18qfwy5glsvh" path="res://assets/sprites/Icons/ui_panel_main_stats.png" id="2_bbkrn"]
 [ext_resource type="PackedScene" uid="uid://bt8x7frykrts7" path="res://src/match/match_player_body.tscn" id="2_fsv0t"]
 [ext_resource type="Script" uid="uid://bhxrn0v1ldv60" path="res://src/match/MatchUI.gd" id="3_1r1rj"]
 [ext_resource type="Texture2D" uid="uid://ccsu1se83blnq" path="res://assets/sprites/Icons/icon_attr_velocity.png" id="3_abdc4"]
-[ext_resource type="PackedScene" uid="uid://qwipcn5icun8" path="res://src/match/Ball.tscn" id="3_fsv0t"]
 [ext_resource type="Script" uid="uid://v5bcnk3p7uvc" path="res://src/playbook/components/RouteManager.gd" id="3_ttpbx"]
 [ext_resource type="Texture2D" uid="uid://ccuqwqpv5iq43" path="res://assets/sprites/Icons/icon_attr_hands.png" id="4_p0nck"]
 [ext_resource type="Texture2D" uid="uid://5kie5syyc1vu" path="res://assets/sprites/Icons/icon_attr_stamina.png" id="5_8hk05"]
@@ -36,7 +35,6 @@
 [node name="MatchPlayer" type="Node2D"]
 script = ExtResource("1_1r1rj")
 player_scene = ExtResource("2_fsv0t")
-ball_scene = ExtResource("3_fsv0t")
 
 [node name="MatchUI" type="CanvasLayer" parent="."]
 layer = -1

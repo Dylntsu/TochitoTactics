@@ -1,0 +1,75 @@
+[gd_scene load_steps=2 format=3 uid="uid://c3aue4rcdfyn1"]
+
+[ext_resource type="Script" uid="uid://c447bsviicn8p" path="res://src/shared/stats_radar.gd" id="1_705oo"]
+
+[node name="StatsRadar" type="Control"]
+layout_mode = 3
+anchors_preset = 0
+script = ExtResource("1_705oo")
+radius = null
+
+[node name="ColorRect" type="ColorRect" parent="."]
+visible = false
+layout_mode = 0
+offset_left = 25.0
+offset_right = 115.0
+offset_bottom = 90.0
+
+[node name="LabelSpeed" type="Label" parent="."]
+layout_mode = 0
+offset_left = 57.0
+offset_right = 97.0
+offset_bottom = 23.0
+text = "SPD"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="LabelArm" type="Label" parent="."]
+layout_mode = 0
+offset_left = 54.92305
+offset_top = 186.0
+offset_right = 94.92305
+offset_bottom = 209.0
+text = "ARM"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="LabelHands" type="Label" parent="."]
+layout_mode = 0
+offset_left = 140.8461
+offset_top = 39.0
+offset_right = 180.8461
+offset_bottom = 62.0
+text = "HND"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="LabelStamina" type="Label" parent="."]
+layout_mode = 0
+offset_left = 139.0
+offset_top = 147.0
+offset_right = 179.0
+offset_bottom = 170.0
+text = "STM"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="LabelAgility" type="Label" parent="."]
+layout_mode = 0
+offset_left = -30.0
+offset_top = 142.0
+offset_right = 4.0
+offset_bottom = 165.0
+text = "AGT"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="LabelGameSense" type="Label" parent="."]
+layout_mode = 0
+offset_left = -26.0
+offset_top = 39.0
+offset_right = 10.0
+offset_bottom = 62.0
+text = "GMS"
+horizontal_alignment = 1
+vertical_alignment = 1

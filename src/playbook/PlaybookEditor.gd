@@ -7,7 +7,7 @@ extends Node2D
 @onready var nodes_container = $NodesContainer
 @onready var background = $CanvasLayer/Background 
 @onready var capture_frame = $CaptureFrame
-
+@onready var stats_radar = %StatsRadar 
 @onready var stats_panel = %StatsPanel 
 
 signal content_changed # señal para avisar a la UI
@@ -119,10 +119,13 @@ func _on_player_input_event(_viewport, event, _shape_idx, player_node):
 		
 		# Actualizar el Panel Estático Lateral
 		_update_stats_panel(player_node)
-
+		
 func _update_stats_panel(player_node):
 	if is_instance_valid(stats_panel):
 		stats_panel.setup(player_node)
+	
+	if stats_radar and player_node.data:
+		stats_radar.setup_data(player_node.data)
 
 func deselect_all_players():
 	for child in nodes_container.get_children():
@@ -216,12 +219,12 @@ func render_formation():
 
 	if player_count <= 0: return
 
-	# 1. Definir el "Lienzo"
+	# 1. Definir el "Lienzo" y Límites Base
 	var frame_rect = capture_frame.get_global_rect()
 	var center_x = frame_rect.get_center().x
 	var available_width = frame_rect.size.x * 0.90 
 	
-	# 2. Lógica de Espaciado Adaptativo
+	# Lógica de Espaciado Adaptativo
 	var ideal_separation = spacing * 1.5
 	var final_separation = ideal_separation
 	
@@ -233,19 +236,25 @@ func render_formation():
 	var total_formation_width = (player_count - 1) * final_separation
 	var start_x = center_x - (total_formation_width / 2.0)
 	
-	# 3. Definir Altura Base (Punto de Instanciación)
+	# Definir Altura Base
 	var desired_y = frame_rect.end.y - (spacing * 1.5)
 	var clamped_y = clamp(desired_y, frame_rect.position.y, frame_rect.end.y - (spacing * 0.5))
-	
-	# Usamos round() aquí también para que el límite sea un entero
 	var scrimmage_line_y = round(clamped_y) 
+	#margen interno
+	var padding = 20.0 
+	var valid_zone_rect = Rect2(
+		frame_rect.position.x + padding, 
+		frame_rect.position.y + padding, # Permitimos todo el alto del frame
+		frame_rect.size.x - (padding * 2), 
+		frame_rect.size.y - (padding * 2)
+	)
 	
-	# Definimos el rectángulo de restricción
+	# Límite específico para Scrimmage 
 	var scrimmage_limit_rect = Rect2(
-		frame_rect.position.x, 
+		frame_rect.position.x + padding, 
 		scrimmage_line_y, 
-		frame_rect.size.x, 
-		frame_rect.end.y - scrimmage_line_y
+		frame_rect.size.x - (padding * 2), 
+		frame_rect.end.y - scrimmage_line_y - padding
 	)
 	
 	for i in range(player_count):
@@ -255,24 +264,35 @@ func render_formation():
 		if team_database.size() > 0:
 			player.data = team_database[i % team_database.size()]
 		
-		# Calculamos en float, pero redondeamos inmediatamente al entero más cercano
-		var raw_x = start_x + (i * final_separation)
-		var pos_x = round(raw_x)
-		var pos_y = round(clamped_y) 
+		# --- CÁLCULO DE POSICIÓN ---
+		var default_x = round(start_x + (i * final_separation))
+		var default_y = round(clamped_y)
+		var target_pos = Vector2(default_x, default_y)
 		
-		# Prioridad a la persistencia
+		# Verificamos si hay datos guardados
 		if _active_play_positions.has(i):
-			var saved_pos_data = _active_play_positions[i]
-			if saved_pos_data is Dictionary and saved_pos_data.has("position"):
-				player.position = saved_pos_data.position.round()
-			elif saved_pos_data is Vector2:
-				player.position = saved_pos_data.round()
-		else:
-			# Usamos las coordenadas redondeadas calculadas arriba
-			player.position = Vector2(pos_x, pos_y)
+			var saved_entry = _active_play_positions[i]
+			var raw_pos = Vector2.ZERO
+			
+			if saved_entry is Dictionary and saved_entry.has("position"):
+				raw_pos = saved_entry.position
+			elif saved_entry is Vector2:
+				raw_pos = saved_entry
+			
+			# Usamos clamp() para recortar los excesos.
+			target_pos.x = clamp(raw_pos.x, valid_zone_rect.position.x, valid_zone_rect.end.x)
+			target_pos.y = clamp(raw_pos.y, valid_zone_rect.position.y, valid_zone_rect.end.y)
+			
+			# Redondeo final para evitar pixel jitter
+			target_pos = target_pos.round()
 		
-		# --- APLICACIÓN DEL LÍMITE ---
-		player.limit_rect = scrimmage_limit_rect 
+		player.position = target_pos
+		
+		# --- ASIGNACIÓN DE LÍMITES AL JUGADOR ---
+		# Le pasamos el rectángulo al script del jugador para que no pueda salir al arrastrarlo después
+		if "limit_rect" in player:
+			player.limit_rect = valid_zone_rect 
+			
 		player.save_starting_position()
 		
 		if player.data and player.data.portrait:
@@ -545,9 +565,7 @@ func load_play_data(play_data) -> void:
 			var p_id = child.player_id
 			if routes_data.has(p_id):
 				child.current_route = routes_data[p_id]
-				if route_manager:
-					route_manager.update_route_origin(p_id, child.get_route_anchor(), true)
-	
+
 	# Esperamos un frame para que Godot termine de calcular tamaños
 	await get_tree().process_frame
 	# Forzamos la sincronización visual final
@@ -725,7 +743,7 @@ func set_visual_precision_mode(active: bool):
 	if is_precision_mode_active != active:
 		is_precision_mode_active = active
 		
-		# 1. Comunicar al cerebro matemático
+		# 1. Comunicar al cerebro
 		if route_manager:
 			route_manager.set_precision_mode(active)
 			

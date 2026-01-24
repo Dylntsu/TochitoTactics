@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cv1khgjs65lnq"
-path="res://.godot/imported/idabel_running-Sheet.png-4fc9e4c96c5150e29ba8fe7a2136b0eb.ctex"
+uid="uid://bggkw7uapf2l4"
+path="res://.godot/imported/idabel_running_back_aseprite-Sheet.png-0e4a50d47b7b36d0e4c5fe89378734ba.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/SpriteSheets_Player/idabel_running-Sheet.png"
-dest_files=["res://.godot/imported/idabel_running-Sheet.png-4fc9e4c96c5150e29ba8fe7a2136b0eb.ctex"]
+source_file="res://assets/SpriteSheets_Player/Idabel/idabel_running_back_aseprite-Sheet.png"
+dest_files=["res://.godot/imported/idabel_running_back_aseprite-Sheet.png-0e4a50d47b7b36d0e4c5fe89378734ba.ctex"]
 
 [params]
 

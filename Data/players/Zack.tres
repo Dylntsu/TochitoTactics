@@ -5,8 +5,9 @@
 
 [resource]
 script = ExtResource("1_gv2m2")
+full_name = "Zack"
 portrait = ExtResource("1_b5vxl")
-stamina = 31.548000000000002
+stamina = 31.548
 speed = 10.0
 hands = 17.857
 arm = 22.619

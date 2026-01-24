@@ -21,9 +21,6 @@ load_path = "res://.godot/imported/face_03.png-283476eb19f533442b266bd42e0f7e57.
 z_index = 15
 texture_filter = 1
 script = ExtResource("1_enjsy")
-min_pixels_per_sec = 81.575
-max_pixels_per_sec = 300.395
-target_head_size = 72.205
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 shape = SubResource("CircleShape2D_57wkv")

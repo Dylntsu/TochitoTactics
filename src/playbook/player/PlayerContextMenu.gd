@@ -25,7 +25,7 @@ func setup(player_node: Node2D):
 	if not is_instance_valid(player_node): return
 	current_player_node = player_node
 	
-	# 1. NOMBRE DEL JUGADOR (Evita el ID si existe un nombre)
+	# 1. NOMBRE DEL JUGADOR 
 	if %Header:
 		var p_name = player_node.get("player_name")
 		if p_name == null or p_name == "":
@@ -38,7 +38,7 @@ func setup(player_node: Node2D):
 	if player_node.get("sprite") and player_node.sprite.texture:
 		%Portrait.texture = player_node.sprite.texture
 	
-	# 3. STATS (Asegúrate de que las barras tengan Size Flags: Horizontal -> Expand)
+	# 3. STATS
 	_set_bar_value(%StaminaBar, player_node, "stamina_stat")
 	_set_bar_value(%VelocityBar, player_node, "speed_stat")
 	_set_bar_value(%HandsBar, player_node, "hands_stat")
@@ -61,7 +61,6 @@ func _set_bar_value(bar: ProgressBar, node: Node2D, stat_name: String):
 	var val = node.get(stat_name)
 	bar.value = val if val != null else 0
 
-# CORRECCIÓN DEL CLICK: Asegúrate de que esta función esté conectada a la señal 'pressed' del PosButton
 func _on_pos_button_pressed():
 	current_role_idx = (current_role_idx + 1) % roles.size()
 	var new_role = roles[current_role_idx]
@@ -78,6 +77,5 @@ func _update_button_visuals():
 	if pos_button:
 		pos_button.texture_normal = icons[role_name]
 	
-	# CENTRADO: Asegúrate de que en el Inspector, RoleLabel -> Horizontal Alignment sea 'Center'
 	if %RoleLabel:
 		%RoleLabel.text = role_name

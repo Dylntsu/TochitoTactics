@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cu345htwaydsd"
-path="res://.godot/imported/idabel_back_idle-Sheet.png-c6a010588e1a88e6b9268fedb4f9180f.ctex"
+uid="uid://b1x8sn78nkl4p"
+path="res://.godot/imported/dani_launching-Sheet.png-a6c9e0f307d0eab98e9221c856770bec.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/SpriteSheets_Player/idabel_back_idle-Sheet.png"
-dest_files=["res://.godot/imported/idabel_back_idle-Sheet.png-c6a010588e1a88e6b9268fedb4f9180f.ctex"]
+source_file="res://assets/SpriteSheets_Player/Dani/dani_launching-Sheet.png"
+dest_files=["res://.godot/imported/dani_launching-Sheet.png-a6c9e0f307d0eab98e9221c856770bec.ctex"]
 
 [params]
 

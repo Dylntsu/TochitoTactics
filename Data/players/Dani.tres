@@ -5,7 +5,7 @@
 
 [resource]
 script = ExtResource("2_t7ghv")
-full_name = "Nani"
+full_name = "Dani"
 portrait = ExtResource("1_cgbt6")
 stamina = 18.0
 speed = 4.0

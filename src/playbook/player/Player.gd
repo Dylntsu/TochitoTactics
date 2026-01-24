@@ -16,12 +16,10 @@ signal interaction_ended
 		if is_inside_tree(): _apply_data_to_visuals()
 
 @export_group("Simulación de Movimiento")
-# Velocidad minima para un jugador con Stat de Velocidad 0
-@export var min_pixels_per_sec: float = 150.0 
-# Velocidad  maxima para un jugador con Stat de Velocidad 100
-@export var max_pixels_per_sec: float = 450.0
+@export var min_pixels_per_sec: float = 200.0 
+@export var max_pixels_per_sec: float = 600.0
 
-# Getters para mantener compatibilidad
+# Getters
 var stamina_stat: float: 
 	get: return data.stamina if data else 50.0
 var speed_stat: float: 
@@ -45,6 +43,10 @@ var player_name: String:
 @onready var label = $Label 
 @export var target_head_size: float = 80.0
 
+# Buscamos el nodo de animación de forma segura
+@onready var anim = get_node_or_null("Visuals/AnimatedSprite2D")
+@onready var visuals_node = get_node_or_null("Visuals")
+
 var current_route: PackedVector2Array = []
 var starting_position: Vector2 
 var is_dragging: bool = false
@@ -54,12 +56,12 @@ var _active_tween: Tween
 var is_playing: bool = false
 var role: String = "WR" 
 @onready var visual_panel = get_node_or_null("Panel")
+var is_running: bool = false 
 
 # ==============================================================================
 # CICLO DE VIDA
 # ==============================================================================
 func _ready():
-
 	input_pickable = true 
 	
 	if sprite and sprite.material:
@@ -74,14 +76,13 @@ func _ready():
 	
 	_apply_data_to_visuals()
 
+func setup_stats(new_data: Resource):
+	if new_data is PlayerStats:
+		self.data = new_data
+		print("Stats inyectados a Player ", player_id, " | Vel Real: ", _get_real_movement_speed())
+
 func _get_real_movement_speed() -> float:
-	# Obtenemos la stat, asegurando que esté entre 0 y 100
 	var stat_value = clamp(self.speed_stat, 0.0, 100.0)
-	
-	# Interpolación Lineal (Lerp): 
-	# Si stat es 0, usa min_pixels_per_sec. 
-	# Si stat es 100, usa max_pixels_per_sec.
-	# Si es 50, usa la mitad.
 	var weight = stat_value / 100.0
 	return lerp(min_pixels_per_sec, max_pixels_per_sec, weight)
 	
@@ -116,8 +117,37 @@ func setup_player_visual(texture: Texture2D, id: int):
 		label.grow_horizontal = Control.GROW_DIRECTION_BOTH
 
 # ==============================================================================
-# LÓGICA DE ANIMACIÓN Y RUTAS
+# LÓGICA DE ANIMACIÓN 
 # ==============================================================================
+func _update_animation_logic(dir: Vector2):
+	if not anim: return
+	if dir.length() < 0.1: return
+	
+	# Lógica para elegir animación según hacia dónde se mueve
+	if abs(dir.x) > abs(dir.y):
+		if anim.sprite_frames.has_animation("idabel_running_90"):
+			anim.play("idabel_running_90")
+		if visuals_node:
+			visuals_node.scale.x = -1 if dir.x < 0 else 1
+	elif dir.y > 0: # Moviéndose hacia abajo (Front)
+		if anim.sprite_frames.has_animation("idabel_running_front"):
+			anim.play("idabel_running_front")
+		if visuals_node: visuals_node.scale.x = 1
+	else: # Moviéndose hacia arriba (Back)
+		if anim.sprite_frames.has_animation("idabel_running_back"):
+			anim.play("idabel_running_back")
+		if visuals_node: visuals_node.scale.x = 1
+
+# ==============================================================================
+# LÓGICA DE RUTAS
+# ==============================================================================
+func _process(_delta):
+	if is_running and not is_playing and not current_route.is_empty():
+		play_route() 
+		
+	if is_dragging:
+		_process_dragging()
+
 func play_route():
 	if current_route.is_empty(): return
 	
@@ -128,38 +158,40 @@ func play_route():
 	
 	_active_tween = create_tween()
 	
-	# 1. Calcular velocidad real basada en stats
 	var move_speed_pps = _get_real_movement_speed()
-	
-	# Necesitamos saber desde dónde partimos para calcular la distancia del primer segmento
-	# Usamos la posición actual visual (ajustada por el offset del panel si existe)
 	var center_offset = (visual_panel.size / 2.0) if visual_panel else Vector2.ZERO
 	var last_pos = position 
 	
 	for point in current_route:
 		var target_pos = point - center_offset
-		
-		# 2. Física: Tiempo = Distancia / Velocidad
 		var distance = last_pos.distance_to(target_pos)
-		
-		# Evitamos división por cero o duraciones minúsculas
 		var duration = 0.0
 		if move_speed_pps > 0:
 			duration = distance / move_speed_pps
 		
-		# 3. Añadimos el paso al Tween
+		# Animamos posición
 		_active_tween.tween_property(self, "position", target_pos, duration)\
 			.set_trans(Tween.TRANS_LINEAR)
 		
-		# Actualizamos la 'última posición' para el cálculo del siguiente segmento
+		_active_tween.parallel().tween_callback(func():
+			var dir = last_pos.direction_to(target_pos)
+			_update_animation_logic(dir)
+		)
+		
 		last_pos = target_pos
 
-	_active_tween.finished.connect(func(): is_playing = false)
+	_active_tween.finished.connect(_on_route_finished)
+
+func _on_route_finished():
+	is_playing = false
+	is_running = false
+	if anim: anim.play("idabel_idle_back") # Regresar a idle al terminar
 
 func stop_animation():
 	if _active_tween and _active_tween.is_valid():
 		_active_tween.kill() 
 	is_playing = false
+	is_running = false
 	
 func reset_to_start():
 	stop_animation()
@@ -180,12 +212,8 @@ func get_route_anchor() -> Vector2:
 # ==============================================================================
 func _input_event(_viewport, event, _shape_idx):
 	if is_playing: return
-	
-	# Click Izquierdo: Pedir ruta
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
 		start_route_requested.emit(self)
-	
-	# Click Derecho: Iniciar arrastre (El editor también detecta esto para mostrar stats)
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_RIGHT and event.pressed:
 		start_dragging()
 
@@ -209,25 +237,23 @@ func stop_dragging():
 	save_starting_position() 
 	interaction_ended.emit()
 	
-func _process(_delta):
-	# Solo procesamos movimiento si estamos arrastrando
-	if is_dragging:
-		var target_pos = get_global_mouse_position() - drag_offset
-		if limit_rect.has_area():
-			var size_x = visual_panel.size.x if visual_panel else 64.0
-			var size_y = visual_panel.size.y if visual_panel else 64.0
-			var radius_x = (size_x * scale.x) / 2.0
-			var radius_y = (size_y * scale.y) / 2.0
-			var min_x = limit_rect.position.x + radius_x
-			var max_x = limit_rect.end.x - radius_x
-			var min_y = limit_rect.position.y + radius_y
-			var max_y = limit_rect.end.y - radius_y
-			if min_x > max_x: target_pos.x = limit_rect.get_center().x
-			else: target_pos.x = clamp(target_pos.x, min_x, max_x)
-			if min_y > max_y: target_pos.y = limit_rect.get_center().y
-			else: target_pos.y = clamp(target_pos.y, min_y, max_y)
-		global_position = target_pos.round()
-		moved.emit(self)
+func _process_dragging():
+	var target_pos = get_global_mouse_position() - drag_offset
+	if limit_rect.has_area():
+		var size_x = visual_panel.size.x if visual_panel else 64.0
+		var size_y = visual_panel.size.y if visual_panel else 64.0
+		var radius_x = (size_x * scale.x) / 2.0
+		var radius_y = (size_y * scale.y) / 2.0
+		var min_x = limit_rect.position.x + radius_x
+		var max_x = limit_rect.end.x - radius_x
+		var min_y = limit_rect.position.y + radius_y
+		var max_y = limit_rect.end.y - radius_y
+		if min_x > max_x: target_pos.x = limit_rect.get_center().x
+		else: target_pos.x = clamp(target_pos.x, min_x, max_x)
+		if min_y > max_y: target_pos.y = limit_rect.get_center().y
+		else: target_pos.y = clamp(target_pos.y, min_y, max_y)
+	global_position = target_pos.round()
+	moved.emit(self)
 		
 func set_role(new_role: String):
 	role = new_role
@@ -239,3 +265,24 @@ func set_role(new_role: String):
 func set_selected(value: bool):
 	if sprite and sprite.material is ShaderMaterial:
 		sprite.material.set_shader_parameter("is_selected", value)
+
+func move_to_setup(target_pos: Vector2, duration: float = 1.0):
+	# 1. Calculamos dirección para la animación
+	var direction = global_position.direction_to(target_pos)
+	
+	# 2. Reproducimos animación de correr según dirección
+	_update_animation_logic(direction)
+	
+	# 3. Creamos el Tween (Movimiento suave)
+	var tween = create_tween()
+	tween.set_trans(Tween.TRANS_SINE)
+	tween.set_ease(Tween.EASE_IN_OUT)
+	
+	# Mover desde donde estoy hasta el objetivo
+	tween.tween_property(self, "global_position", target_pos, duration)
+	
+	# 4. Al terminar, volver a Idle
+	tween.tween_callback(func():
+		if anim: anim.play("idabel_idle_back")
+		if visuals_node: visuals_node.scale.x = 1 
+)

@@ -1,11 +1,42 @@
-[gd_scene load_steps=30 format=3 uid="uid://bt8x7frykrts7"]
+[gd_scene load_steps=44 format=3 uid="uid://bt8x7frykrts7"]
 
 [ext_resource type="Script" uid="uid://djj8bjw6kkrfq" path="res://src/match/MatchPlayerBody.gd" id="1_5n1ov"]
-[ext_resource type="Texture2D" uid="uid://dkyyg8b30ln7l" path="res://assets/SpriteSheets_Player/Idabel_90runningt.png" id="1_8ni5f"]
-[ext_resource type="Texture2D" uid="uid://bggkw7uapf2l4" path="res://assets/SpriteSheets_Player/idabel_running_back_aseprite-Sheet.png" id="2_cvf3v"]
-[ext_resource type="Texture2D" uid="uid://cu345htwaydsd" path="res://assets/SpriteSheets_Player/idabel_back_idle-Sheet.png" id="2_m73ls"]
-[ext_resource type="Texture2D" uid="uid://d23md4uur66ub" path="res://assets/SpriteSheets_Player/chr01_run_diag_front-Sheet.png" id="3_5n1ov"]
-[ext_resource type="Texture2D" uid="uid://cv1khgjs65lnq" path="res://assets/SpriteSheets_Player/idabel_running-Sheet.png" id="4_m73ls"]
+[ext_resource type="Texture2D" uid="uid://dkyyg8b30ln7l" path="res://assets/SpriteSheets_Player/Idabel/Idabel_90runningt.png" id="1_8ni5f"]
+[ext_resource type="Texture2D" uid="uid://b2i0ncxs2703p" path="res://assets/SpriteSheets_Player/Dani/dani_back_idle-Sheet.png" id="2_8xucj"]
+[ext_resource type="Texture2D" uid="uid://bggkw7uapf2l4" path="res://assets/SpriteSheets_Player/Idabel/idabel_running_back_aseprite-Sheet.png" id="2_cvf3v"]
+[ext_resource type="Texture2D" uid="uid://cu345htwaydsd" path="res://assets/SpriteSheets_Player/Idabel/idabel_back_idle-Sheet.png" id="2_m73ls"]
+[ext_resource type="Texture2D" uid="uid://d23md4uur66ub" path="res://assets/SpriteSheets_Player/Idabel/chr01_run_diag_front-Sheet.png" id="3_5n1ov"]
+[ext_resource type="Texture2D" uid="uid://b1x8sn78nkl4p" path="res://assets/SpriteSheets_Player/Dani/dani_launching-Sheet.png" id="3_u6fko"]
+[ext_resource type="Texture2D" uid="uid://cv1khgjs65lnq" path="res://assets/SpriteSheets_Player/Idabel/idabel_running-Sheet.png" id="4_m73ls"]
+[ext_resource type="Texture2D" uid="uid://bfsjomeppqkmr" path="res://assets/SpriteSheets_Player/Idabel/chr01_run_diag_sup-Sheet.png" id="5_m73ls"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_seo31"]
+atlas = ExtResource("2_8xucj")
+region = Rect2(0, 0, 60, 80)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_ggfl0"]
+atlas = ExtResource("2_8xucj")
+region = Rect2(60, 0, 60, 80)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_4a6co"]
+atlas = ExtResource("3_u6fko")
+region = Rect2(0, 0, 60, 70)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_j78si"]
+atlas = ExtResource("3_u6fko")
+region = Rect2(60, 0, 60, 70)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_xxq74"]
+atlas = ExtResource("3_u6fko")
+region = Rect2(120, 0, 60, 70)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_b57iw"]
+atlas = ExtResource("3_u6fko")
+region = Rect2(180, 0, 60, 70)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_md1ie"]
+atlas = ExtResource("3_u6fko")
+region = Rect2(240, 0, 60, 70)
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_dmr1t"]
 atlas = ExtResource("2_m73ls")
@@ -59,6 +90,22 @@ region = Rect2(112, 0, 56, 66)
 atlas = ExtResource("2_cvf3v")
 region = Rect2(168, 0, 56, 66)
 
+[sub_resource type="AtlasTexture" id="AtlasTexture_ails6"]
+atlas = ExtResource("5_m73ls")
+region = Rect2(0, 0, 46, 66)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_njlg7"]
+atlas = ExtResource("5_m73ls")
+region = Rect2(46, 0, 46, 66)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_ihg7t"]
+atlas = ExtResource("5_m73ls")
+region = Rect2(92, 0, 46, 66)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_1h3jv"]
+atlas = ExtResource("5_m73ls")
+region = Rect2(138, 0, 46, 66)
+
 [sub_resource type="AtlasTexture" id="AtlasTexture_xfvev"]
 atlas = ExtResource("3_5n1ov")
 region = Rect2(0, 0, 56, 66)
@@ -93,6 +140,37 @@ region = Rect2(168, 0, 56, 66)
 
 [sub_resource type="SpriteFrames" id="SpriteFrames_6qdns"]
 animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_seo31")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_ggfl0")
+}],
+"loop": true,
+"name": &"dani_back_idle",
+"speed": 3.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_4a6co")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_j78si")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_xxq74")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_b57iw")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_md1ie")
+}],
+"loop": false,
+"name": &"dani_back_launching",
+"speed": 5.0
+}, {
 "frames": [{
 "duration": 1.0,
 "texture": SubResource("AtlasTexture_dmr1t")
@@ -149,6 +227,23 @@ animations = [{
 }, {
 "frames": [{
 "duration": 1.0,
+"texture": SubResource("AtlasTexture_ails6")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_njlg7")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_ihg7t")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_1h3jv")
+}],
+"loop": true,
+"name": &"idabel_running_diag_back",
+"speed": 6.0
+}, {
+"frames": [{
+"duration": 1.0,
 "texture": SubResource("AtlasTexture_xfvev")
 }, {
 "duration": 1.0,
@@ -200,8 +295,10 @@ script = ExtResource("1_5n1ov")
 z_index = 10
 scale = Vector2(1.0546408, 1.05368)
 sprite_frames = SubResource("SpriteFrames_6qdns")
-animation = &"idabel_idle_back"
+animation = &"dani_back_launching"
 autoplay = "idabel_idle_back"
+frame = 4
+frame_progress = 1.0
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 position = Vector2(0, 2.0000005)

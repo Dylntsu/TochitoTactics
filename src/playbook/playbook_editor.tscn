@@ -1,4 +1,4 @@
-[gd_scene load_steps=10 format=3 uid="uid://uby6wv405ia6"]
+[gd_scene load_steps=11 format=3 uid="uid://uby6wv405ia6"]
 
 [ext_resource type="Script" uid="uid://cgiy3uu4qb8w8" path="res://src/playbook/PlaybookEditor.gd" id="1_ybrfa"]
 [ext_resource type="Texture2D" uid="uid://dl8pi2jccrcsr" path="res://assets/sprites/tocho_tactics_background.png" id="2_4aaqw"]
@@ -8,6 +8,7 @@
 [ext_resource type="Texture2D" uid="uid://p2h53a8mxwno" path="res://assets/sprites/Icons/play_draft_icon.png" id="5_uu6s6"]
 [ext_resource type="Script" uid="uid://bc54gkxxvck7j" path="res://src/playbook/player/PlayerContextMenu.gd" id="6_mkvnw"]
 [ext_resource type="Texture2D" uid="uid://ccghq7pe7a8n8" path="res://assets/players_icons/face_01.png" id="8_vyx8u"]
+[ext_resource type="PackedScene" uid="uid://c3aue4rcdfyn1" path="res://src/shared/stats_radar.tscn" id="9_jwnju"]
 
 [sub_resource type="LabelSettings" id="LabelSettings_sigk0"]
 font_size = 46
@@ -183,13 +184,101 @@ offset_right = 20.0
 offset_bottom = 117.91451
 scale = Vector2(9.806836, 7.1696067)
 
+[node name="LeftColumn" parent="UI_Layer/MainLayout/HBoxContainer/LeftPanel/StatsPanel/Background" index="0"]
+visible = false
+offset_left = 25.337442
+offset_right = 148.66888
+
+[node name="Header" parent="UI_Layer/MainLayout/HBoxContainer/LeftPanel/StatsPanel/Background" index="1"]
+offset_left = 10.073921
+offset_top = 1.1070557
+offset_right = 92.07392
+offset_bottom = 24.107056
+
 [node name="Portrait" parent="UI_Layer/MainLayout/HBoxContainer/LeftPanel/StatsPanel/Background" index="2"]
-offset_left = 5.3931103
-offset_top = 4.1514773
-offset_right = 47.393112
-offset_bottom = 42.151478
+offset_left = 14.856492
+offset_top = 4.428242
+offset_right = 56.85649
+offset_bottom = 42.42824
 scale = Vector2(0.25606638, 0.3548747)
 texture = ExtResource("8_vyx8u")
+
+[node name="RoleLabel" parent="UI_Layer/MainLayout/HBoxContainer/LeftPanel/StatsPanel/Background" index="3"]
+offset_left = 1.9333789
+offset_top = 18.958414
+offset_right = 155.93338
+offset_bottom = 41.958412
+
+[node name="PosButton" parent="UI_Layer/MainLayout/HBoxContainer/LeftPanel/StatsPanel/Background" index="4"]
+offset_left = 4.1720285
+offset_top = 24.632103
+offset_right = 804.17206
+offset_bottom = 824.6321
+scale = Vector2(0.015129599, 0.015129599)
+
+[node name="StatsGrid" parent="UI_Layer/MainLayout/HBoxContainer/LeftPanel/StatsPanel/Background" index="5"]
+visible = false
+offset_top = 5.3969245
+offset_bottom = 167.44794
+
+[node name="background_position_icon" parent="UI_Layer/MainLayout/HBoxContainer/LeftPanel/StatsPanel/Background" index="6"]
+offset_left = 1.1193247
+offset_top = 22.556366
+offset_right = 801.1193
+offset_bottom = 822.5564
+scale = Vector2(0.021069594, 0.01843078)
+
+[node name="velocity_icon" parent="UI_Layer/MainLayout/HBoxContainer/LeftPanel/StatsPanel/Background" index="7"]
+offset_left = 27.474304
+offset_top = 14.3914795
+offset_right = 131.4743
+offset_bottom = 69.391495
+scale = Vector2(0.029366458, 0.046840698)
+
+[node name="stamina_icon" parent="UI_Layer/MainLayout/HBoxContainer/LeftPanel/StatsPanel/Background" index="8"]
+offset_left = 35.411377
+offset_top = 31.55127
+offset_right = 139.41138
+offset_bottom = 109.55127
+scale = Vector2(0.02193204, 0.0349825)
+
+[node name="hands_icon" parent="UI_Layer/MainLayout/HBoxContainer/LeftPanel/StatsPanel/Background" index="9"]
+offset_left = 35.106094
+offset_top = 17.021065
+offset_right = 139.1061
+offset_bottom = 105.021065
+scale = Vector2(0.025537442, 0.040733263)
+
+[node name="arm_icon" parent="UI_Layer/MainLayout/HBoxContainer/LeftPanel/StatsPanel/Background" index="10"]
+offset_left = 28.491943
+offset_top = 36.11792
+offset_right = 132.49194
+offset_bottom = 124.11792
+scale = Vector2(0.020235235, 0.032276027)
+
+[node name="sense_icon" parent="UI_Layer/MainLayout/HBoxContainer/LeftPanel/StatsPanel/Background" index="11"]
+offset_left = 20.55487
+offset_top = 18.405518
+offset_right = 124.55487
+offset_bottom = 106.40552
+scale = Vector2(0.01982957, 0.031628974)
+
+[node name="agility_icon" parent="UI_Layer/MainLayout/HBoxContainer/LeftPanel/StatsPanel/Background" index="12"]
+offset_left = 20.55487
+offset_top = 31.41333
+offset_right = 124.55487
+offset_bottom = 119.41333
+scale = Vector2(0.021895377, 0.03492402)
+
+[node name="StatsRadar" parent="UI_Layer/MainLayout/HBoxContainer/LeftPanel/StatsPanel/Background" index="13" instance=ExtResource("9_jwnju")]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 22.793518
+offset_top = 17.436157
+offset_right = 172.12326
+offset_bottom = 228.32556
+scale = Vector2(0.08578757, 0.08569947)
+radius = 80.0
 
 [node name="Spacer" type="Control" parent="UI_Layer/MainLayout/HBoxContainer"]
 layout_mode = 2
